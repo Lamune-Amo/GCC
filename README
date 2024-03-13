@@ -20,3 +20,12 @@ Copyright years on GCC source files may be listed using range
 notation, e.g., 1987-2012, indicating that every year in the range,
 inclusive, is a copyrightable year that could otherwise be listed
 individually.
+
+
+in source
+/contrib/download_prerequisites
+
+in build 
+../source/configure --prefix=/home/yahong/GCC/install --target=cr16-linux --disable-bootstrap --disable-checking --disable-multilib --without-glib --enable-languages=c
+make all-gcc CFLAGS="-O0 -g" CPPFLAGS="-O0 -g" -j4
+make install 

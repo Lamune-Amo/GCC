@@ -93,8 +93,9 @@ esac
 case ${host} in
   *-darwin*)
     # Generic darwin host support.
-    out_host_hook_obj=host-darwin.o
-    host_xmake_file="${host_xmake_file} x-darwin"
+#TODO
+#out_host_hook_obj=host-darwin.o
+#host_xmake_file="${host_xmake_file} x-darwin"
     ;;
 esac
 
