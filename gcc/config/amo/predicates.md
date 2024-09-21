@@ -1,4 +1,4 @@
-;; Predicates of machine description for CR16.
+;; Predicates of machine description for AMO.
 ;; Copyright (C) 2012-2018 Free Software Foundation, Inc.
 ;; Contributed by KPIT Cummins Infosystems Limited.
 ;;

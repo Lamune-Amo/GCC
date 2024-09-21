@@ -1,4 +1,4 @@
-;; GCC machine description for CR16.
+;; GCC machine description for AMO.
 ;; Copyright (C) 2012-2018 Free Software Foundation, Inc.
 ;; Contributed by KPIT Cummins Infosystems Limited.
 
@@ -48,7 +48,7 @@
 )
 
 ;;  Mode Macro Definitions
-(define_mode_iterator CR16IM [QI HI SI])
+(define_mode_iterator AMOIM [QI HI SI])
 (define_mode_iterator LONG   [SI SF])
 (define_mode_iterator ALLMTD [QI HI SI SF DI DF])
 (define_mode_iterator DOUBLE [DI DF])
@@ -373,8 +373,8 @@
 )
 
 (define_insn "one_cmpl<mode>2"
-  [(set (match_operand:CR16IM 0 "register_operand" "=r")
-	(not:CR16IM (match_operand:CR16IM 1 "register_operand" "0")))]
+  [(set (match_operand:AMOIM 0 "register_operand" "=r")
+	(not:AMOIM (match_operand:AMOIM 1 "register_operand" "0")))]
   ""
   "xor<tIsa>\t$-1, %0"
   [(set_attr "length" "2")]
@@ -409,8 +409,8 @@
 )
 
 (define_expand "ashr<mode>3"
-  [(set (match_operand:CR16IM 0 "register_operand" "")
-	(ashiftrt:CR16IM (match_operand:CR16IM 1 "register_operand" "")
+  [(set (match_operand:AMOIM 0 "register_operand" "")
+	(ashiftrt:AMOIM (match_operand:AMOIM 1 "register_operand" "")
 			 (match_operand:QI 2 "nonmemory_operand" "")))]
   ""
   {
@@ -481,8 +481,8 @@
 )
 
 (define_expand "lshr<mode>3"
-  [(set (match_operand:CR16IM 0 "register_operand" "")
-	(lshiftrt:CR16IM (match_operand:CR16IM 1 "register_operand" "")
+  [(set (match_operand:AMOIM 0 "register_operand" "")
+	(lshiftrt:AMOIM (match_operand:AMOIM 1 "register_operand" "")
 			 (match_operand:QI 2 "reg_or_int_operand" "")))]
   ""
   {
@@ -572,7 +572,7 @@
 ;; mode of the new reg is always mode MODE when value is constant
 ;;
 ;; Why should copy_to_mode_reg be called?
-;; All sorts of move are nor supported by CR16. Therefore, 
+;; All sorts of move are nor supported by AMO. Therefore, 
 ;; when unsupported move is encountered, the additional instructions 
 ;; will be introduced for the purpose.
 ;;
@@ -597,7 +597,7 @@
 	    if (push_operand (operands[0], <MODE>mode)) 
 	      {
 		/* Use copy_to_mode_reg only if the register needs 
-		to be pushed is SP as CR16 does not support pushing SP.  */
+		to be pushed is SP as AMO does not support pushing SP.  */
 		if (!nosp_reg_operand (operands[1], <MODE>mode))
 		  operands[1] = copy_to_mode_reg (<MODE>mode, operands[1]);
 	      }
@@ -607,13 +607,13 @@
 		   subject to conditions inside.  */
 		if (!register_operand (operands[1], <MODE>mode))
 		  {
-		    /* CR16 does not support moving immediate to SI or SF 
+		    /* AMO does not support moving immediate to SI or SF 
 		       type memory.  */
 		    if (<MODE>mode == SImode || <MODE>mode == SFmode ||
 			<MODE>mode == DImode || <MODE>mode == DFmode)
 		      operands[1] = copy_to_mode_reg (<MODE>mode, operands[1]);
 		    else
-		      /* moving imm4 is supported by CR16 instruction.  */
+		      /* moving imm4 is supported by AMO instruction.  */
 		      if (!u4bits_operand (operands[1], <MODE>mode))
 			operands[1] = copy_to_mode_reg (<MODE>mode, operands[1]);
 		  }
@@ -790,8 +790,8 @@
 (define_insn "cbranch<mode>4"
   [(set (pc)
 	(if_then_else (match_operator 0 "ordered_comparison_operator"
-		      [(match_operand:CR16IM 1 "register_operand" "r,r")
-		       (match_operand:CR16IM 2 "nonmemory_operand" "r,n")])
+		      [(match_operand:AMOIM 1 "register_operand" "r,r")
+		       (match_operand:AMOIM 2 "nonmemory_operand" "r,n")])
 		       (label_ref (match_operand 3 "" ""))
                       (pc)))
    (clobber (cc0))]
@@ -802,8 +802,8 @@
 
 (define_expand "cmp<mode>"
   [(parallel [(set (cc0)
-    (compare (match_operand:CR16IM 0 "register_operand" "")
-	     (match_operand:CR16IM 1 "nonmemory_operand" "")))
+    (compare (match_operand:AMOIM 0 "register_operand" "")
+	     (match_operand:AMOIM 1 "nonmemory_operand" "")))
     (clobber (match_scratch:HI 2 "=r"))] ) ]
   ""
   "")
@@ -811,8 +811,8 @@
 ;;  Scond Instructions
 (define_expand "cstore<mode>4"
   [(set (cc0)
-	(compare (match_operand:CR16IM 2 "register_operand" "")
-		 (match_operand:CR16IM 3 "nonmemory_operand" "")))
+	(compare (match_operand:AMOIM 2 "register_operand" "")
+		 (match_operand:AMOIM 3 "nonmemory_operand" "")))
    (set (match_operand:HI 0 "register_operand")
 	(match_operator:HI 1 "ordered_comparison_operator"
 	[(cc0) (const_int 0)]))]
@@ -822,8 +822,8 @@
 
 (define_insn "*cmp<mode>_insn"
   [(set (cc0)
-	(compare (match_operand:CR16IM 0 "register_operand" "r,r")
-		 (match_operand:CR16IM 1 "nonmemory_operand" "r,n")))]
+	(compare (match_operand:AMOIM 0 "register_operand" "r,r")
+		 (match_operand:AMOIM 1 "nonmemory_operand" "r,n")))]
   ""
   "cmp<tIsa>\t%1, %0"
   [(set_attr "length" "2,4")]

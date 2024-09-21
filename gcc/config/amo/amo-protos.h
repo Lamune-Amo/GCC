@@ -18,8 +18,8 @@
    along with GCC; see the file COPYING3.  If not see
    <http://www.gnu.org/licenses/>.  */
 
-#ifndef GCC_CR16_PROTOS_H
-#define GCC_CR16_PROTOS_H
+#ifndef GCC_AMO_PROTOS_H
+#define GCC_AMO_PROTOS_H
 
 /* Register usage.  */
 extern enum reg_class amo_regno_reg_class (int);
@@ -38,10 +38,10 @@ extern void amo_init_cumulative_args (CUMULATIVE_ARGS *, tree, rtx);
 /* Enumeration giving the various data models we support.  */
 enum data_model_type
 {
-  DM_DEFAULT,		/* Default data model (in CR16C/C+ - up to 16M).  */
-  DM_NEAR,		/* Near data model    (in CR16C/C+ - up to 1M).  */
-  DM_FAR,		/* Far data model     (in CR16C+   - up to 4G)
-			   (in CR16C    - up to 16M).  */
+  DM_DEFAULT,		/* Default data model (in AMOC/C+ - up to 16M).  */
+  DM_NEAR,		/* Near data model    (in AMOC/C+ - up to 1M).  */
+  DM_FAR,		/* Far data model     (in AMOC+   - up to 4G)
+			   (in AMOC    - up to 16M).  */
   ILLEGAL_DM		/* Illegal data model.  */
 };
 
@@ -60,11 +60,11 @@ struct amo_address
 
 enum amo_addrtype
 {
-  CR16_INVALID,
-  CR16_REG_REL,
-  CR16_REGP_REL,
-  CR16_INDEX_REGP_REL,
-  CR16_ABSOLUTE
+  AMO_INVALID,
+  AMO_REG_REL,
+  AMO_REGP_REL,
+  AMO_INDEX_REGP_REL,
+  AMO_ABSOLUTE
 };
 
 extern void notice_update_cc (rtx);
@@ -96,4 +96,4 @@ extern int amo_interrupt_function_p (void);
 extern bool amo_is_data_model (enum data_model_type);
 extern poly_int64 amo_push_rounding (poly_int64);
 
-#endif /* Not GCC_CR16_PROTOS_H.  */ 
+#endif /* Not GCC_AMO_PROTOS_H.  */ 

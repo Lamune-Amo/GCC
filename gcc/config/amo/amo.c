@@ -1,4 +1,4 @@
-/* Output routines for CR16 processor.
+/* Output routines for AMO processor.
    Copyright (C) 2012-2018 Free Software Foundation, Inc.
    Contributed by KPIT Cummins Infosystems Limited.
   
@@ -271,7 +271,7 @@ amo_is_data_model (enum data_model_type model)
 static void
 amo_override_options (void)
 {
-  /* Disable -fdelete-null-pointer-checks option for CR16 target.
+  /* Disable -fdelete-null-pointer-checks option for AMO target.
      Programs which rely on NULL pointer dereferences _not_ halting the 
      program may not work properly with this option. So disable this 
      option.  */
@@ -300,7 +300,7 @@ amo_override_options (void)
 	data_model = DM_NEAR;
       else if (strcmp (amo_data_model, "far") == 0)
 	{
-	  if (TARGET_CR16CP)
+	  if (TARGET_AMOCP)
 	    data_model = DM_FAR;
 	  else
 	    error ("data-model=far not valid for amoc architecture");
@@ -406,8 +406,8 @@ amo_compute_save_regs (void)
     if (current_frame_info.save_regs[regno] == 1)
       {
 	current_frame_info.last_reg_to_save = regno;
-	if (regno >= CR16_FIRST_DWORD_REGISTER)
-	  current_frame_info.reg_size += CR16_UNITS_PER_DWORD;
+	if (regno >= AMO_FIRST_DWORD_REGISTER)
+	  current_frame_info.reg_size += AMO_UNITS_PER_DWORD;
 	else
 	  current_frame_info.reg_size += UNITS_PER_WORD;
       }
@@ -467,10 +467,10 @@ amo_initial_elimination_offset (int from, int to)
 enum reg_class
 amo_regno_reg_class (int regno)
 {
-  if ((regno >= 0) && (regno < CR16_FIRST_DWORD_REGISTER))
+  if ((regno >= 0) && (regno < AMO_FIRST_DWORD_REGISTER))
     return SHORT_REGS;
 
-  if ((regno >= CR16_FIRST_DWORD_REGISTER) && (regno < FIRST_PSEUDO_REGISTER))
+  if ((regno >= AMO_FIRST_DWORD_REGISTER) && (regno < FIRST_PSEUDO_REGISTER))
     return LONG_REGS;
 
   return NO_REGS;
@@ -481,12 +481,12 @@ amo_regno_reg_class (int regno)
 static unsigned int
 amo_hard_regno_nregs (unsigned int regno, machine_mode mode)
 {
-  if (regno >= CR16_FIRST_DWORD_REGISTER)
-    return CEIL (GET_MODE_SIZE (mode), CR16_UNITS_PER_DWORD);
+  if (regno >= AMO_FIRST_DWORD_REGISTER)
+    return CEIL (GET_MODE_SIZE (mode), AMO_UNITS_PER_DWORD);
   return CEIL (GET_MODE_SIZE (mode), UNITS_PER_WORD);
 }
 
-/* Implement TARGET_HARD_REGNO_MODE_OK.  On the CR16 architecture, all
+/* Implement TARGET_HARD_REGNO_MODE_OK.  On the AMO architecture, all
    registers can hold all modes, except that double precision floats
    (and double ints) must fall on even-register boundaries.  */
 
@@ -755,11 +755,11 @@ amo_decompose_const (rtx x, int *code, enum data_model_type *data,
       /* 2 indicates func sym.  */
       if (*code == 0)
 	{
-	  if (CR16_TARGET_DATA_NEAR)
+	  if (AMO_TARGET_DATA_NEAR)
 	    *data = DM_DEFAULT;
-	  else if (CR16_TARGET_DATA_MEDIUM)
+	  else if (AMO_TARGET_DATA_MEDIUM)
 	    *data = DM_FAR;
-	  else if (CR16_TARGET_DATA_FAR)
+	  else if (AMO_TARGET_DATA_FAR)
 	    {
 	      if (treat_as_const)
 		/* This will be used only for printing 
@@ -799,7 +799,7 @@ amo_decompose_const (rtx x, int *code, enum data_model_type *data,
    check if the address is valid and second to print the address
    operand.
 
-   Following tables list valid address supported in CR16C/C+ architectures.
+   Following tables list valid address supported in AMOC/C+ architectures.
    Legend: 
    aN : Absoulte address N-bit address
    R  : One 16-bit register
@@ -809,45 +809,45 @@ amo_decompose_const (rtx x, int *code, enum data_model_type *data,
 
    ----Code addresses----
    Branch operands:
-   disp9        : CR16_ABSOLUTE       (disp)
-   disp17       : CR16_ABSOLUTE       (disp)
-   disp25       : CR16_ABSOLUTE       (disp)
-   RP + disp25  : CR16_REGP_REL       (base, disp)
+   disp9        : AMO_ABSOLUTE       (disp)
+   disp17       : AMO_ABSOLUTE       (disp)
+   disp25       : AMO_ABSOLUTE       (disp)
+   RP + disp25  : AMO_REGP_REL       (base, disp)
 
    Jump operands:
-   RP           : CR16_REGP_REL       (base, disp=0)
-   a24          : CR16_ABSOLUTE       (disp)
+   RP           : AMO_REGP_REL       (base, disp=0)
+   a24          : AMO_ABSOLUTE       (disp)
 
    ----Data addresses----
-   a20          : CR16_ABSOLUTE       (disp)                near (1M)
-   a24          : CR16_ABSOLUTE       (disp)                medium  (16M)
-   R  + d20     : CR16_REG_REL        (base,  disp)         near (1M+64K)
-   RP + d4      : CR16_REGP_REL       (base,  disp)         far  (4G)
-   RP + d16     : CR16_REGP_REL       (base,  disp)         far  (4G)
-   RP + d20     : CR16_REGP_REL       (base,  disp)         far  (4G)
+   a20          : AMO_ABSOLUTE       (disp)                near (1M)
+   a24          : AMO_ABSOLUTE       (disp)                medium  (16M)
+   R  + d20     : AMO_REG_REL        (base,  disp)         near (1M+64K)
+   RP + d4      : AMO_REGP_REL       (base,  disp)         far  (4G)
+   RP + d16     : AMO_REGP_REL       (base,  disp)         far  (4G)
+   RP + d20     : AMO_REGP_REL       (base,  disp)         far  (4G)
    I            : *** Valid but port does not support this
    I  + a20     : *** Valid but port does not support this
-   I  + RP + d14: CR16_INDEX_REGP_REL (base,  index, disp)  far  (4G)
-   I  + RP + d20: CR16_INDEX_REGP_REL (base,  index, disp)  far  (4G)
+   I  + RP + d14: AMO_INDEX_REGP_REL (base,  index, disp)  far  (4G)
+   I  + RP + d20: AMO_INDEX_REGP_REL (base,  index, disp)  far  (4G)
 
    Decomposing Data model in case of absolute address.
 
    Target Option             Address type Resultant Data ref type
    ----------------------    ------------ -----------------------
-   CR16_TARGET_MODEL_NEAR    ABS20        DM_DEFAULT
-   CR16_TARGET_MODEL_NEAR    IMM20        DM_DEFAULT
-   CR16_TARGET_MODEL_NEAR    ABS24        Invalid
-   CR16_TARGET_MODEL_NEAR    IMM32        Invalid
+   AMO_TARGET_MODEL_NEAR    ABS20        DM_DEFAULT
+   AMO_TARGET_MODEL_NEAR    IMM20        DM_DEFAULT
+   AMO_TARGET_MODEL_NEAR    ABS24        Invalid
+   AMO_TARGET_MODEL_NEAR    IMM32        Invalid
 
-   CR16_TARGET_MODEL_MEDIUM  ABS20        DM_DEFAULT
-   CR16_TARGET_MODEL_MEDIUM  IMM20        DM_DEFAULT
-   CR16_TARGET_MODEL_MEDIUM  ABS24        DM_FAR
-   CR16_TARGET_MODEL_MEDIUM  IMM32        Invalid
+   AMO_TARGET_MODEL_MEDIUM  ABS20        DM_DEFAULT
+   AMO_TARGET_MODEL_MEDIUM  IMM20        DM_DEFAULT
+   AMO_TARGET_MODEL_MEDIUM  ABS24        DM_FAR
+   AMO_TARGET_MODEL_MEDIUM  IMM32        Invalid
 
-   CR16_TARGET_MODEL_FAR     ABS20        DM_DEFAULT
-   CR16_TARGET_MODEL_FAR     IMM20        DM_DEFAULT
-   CR16_TARGET_MODEL_FAR     ABS24        DM_FAR
-   CR16_TARGET_MODEL_FAR     IMM32        DM_FAR.  */
+   AMO_TARGET_MODEL_FAR     ABS20        DM_DEFAULT
+   AMO_TARGET_MODEL_FAR     IMM20        DM_DEFAULT
+   AMO_TARGET_MODEL_FAR     ABS24        DM_FAR
+   AMO_TARGET_MODEL_FAR     IMM32        DM_FAR.  */
 enum amo_addrtype
 amo_decompose_address (rtx addr, struct amo_address *out,
 			bool debug_print, bool treat_as_const)
@@ -855,7 +855,7 @@ amo_decompose_address (rtx addr, struct amo_address *out,
   rtx base = NULL_RTX, disp = NULL_RTX, index = NULL_RTX;
   enum data_model_type data = ILLEGAL_DM;
   int code = -1;
-  enum amo_addrtype retval = CR16_INVALID;
+  enum amo_addrtype retval = AMO_INVALID;
 
   switch (GET_CODE (addr))
     {
@@ -877,35 +877,35 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 	  data = DM_DEFAULT;
 	  if (debug_print)
 	    fprintf (stderr, "\ndata:%d", data);
-	  retval = CR16_ABSOLUTE;
+	  retval = AMO_ABSOLUTE;
 	}
       else if (UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 24))
 	{
-	  if (!CR16_TARGET_DATA_NEAR)
+	  if (!AMO_TARGET_DATA_NEAR)
 	    {
 	      data = DM_FAR;
 	      if (debug_print)
 		fprintf (stderr, "\ndata:%d", data);
-	      retval = CR16_ABSOLUTE;
+	      retval = AMO_ABSOLUTE;
 	    }
 	  else
-	    return CR16_INVALID;	/* ABS24 is not support in NEAR model.  */
+	    return AMO_INVALID;	/* ABS24 is not support in NEAR model.  */
 	}
       else
-	return CR16_INVALID;
+	return AMO_INVALID;
       break;
 
     case CONST:
       /* A CONST is an expression of PLUS or MINUS with 
 	 CONST_INT, SYMBOL_REF or LABEL_REF. This is the
 	 result of assembly-time arithmetic computation.  */
-      retval = CR16_ABSOLUTE;
+      retval = AMO_ABSOLUTE;
       disp = addr;
       /* Call the helper function to check the validity.  */
       amo_decompose_const (XEXP (addr, 0), &code, &data, treat_as_const);
       if ((code == 0) && (data == ILLEGAL_DM))
 	/* CONST is not valid code or data address.  */
-	return CR16_INVALID;
+	return AMO_INVALID;
       if (debug_print)
 	{
 	  fprintf (stderr, "\ndisp:");
@@ -916,7 +916,7 @@ amo_decompose_address (rtx addr, struct amo_address *out,
       break;
 
     case LABEL_REF:
-      retval = CR16_ABSOLUTE;
+      retval = AMO_ABSOLUTE;
       disp = addr;
       /* 1 - indicates non-function symbol.  */
       code = 1;
@@ -930,7 +930,7 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 
     case SYMBOL_REF:
       /* Absolute address (known at link time).  */
-      retval = CR16_ABSOLUTE;
+      retval = AMO_ABSOLUTE;
       disp = addr;
       /* This is a code address if symbol_ref is a function.  */
       /* 2 indicates func sym.  */
@@ -944,11 +944,11 @@ amo_decompose_address (rtx addr, struct amo_address *out,
       /* If not function ref then check if valid data ref.  */
       if (code == 0)
 	{
-	  if (CR16_TARGET_DATA_NEAR)
+	  if (AMO_TARGET_DATA_NEAR)
 	    data = DM_DEFAULT;
-	  else if (CR16_TARGET_DATA_MEDIUM)
+	  else if (AMO_TARGET_DATA_MEDIUM)
 	    data = DM_FAR;
-	  else if (CR16_TARGET_DATA_FAR)
+	  else if (AMO_TARGET_DATA_FAR)
 	    {
 	      if (treat_as_const)
 		/* This will be used only for printing the 
@@ -958,7 +958,7 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 	      else
 		/* This call is (may be) made by 
 		   amo_legitimate_address_p.  */
-		return CR16_INVALID;
+		return AMO_INVALID;
 	    }
 	  else
 	    data = DM_DEFAULT;
@@ -971,11 +971,11 @@ amo_decompose_address (rtx addr, struct amo_address *out,
     case SUBREG:
       /* Register relative address.  */
       /* Assume REG fits in a single register.  */
-      retval = CR16_REG_REL;
+      retval = AMO_REG_REL;
       if (GET_MODE_BITSIZE (GET_MODE (addr)) > BITS_PER_WORD)
 	if (!LONG_REG_P (REGNO (addr)))
 	  /* REG will result in reg pair.  */
-	  retval = CR16_REGP_REL;
+	  retval = AMO_REGP_REL;
       base = addr;
       if (debug_print)
 	{
@@ -1003,7 +1003,7 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 	    case CONST_INT:
 	      /* Shall fit in 20-bits.  */
 	      if (!UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 20))
-		return CR16_INVALID;
+		return AMO_INVALID;
 	      code = 0;
 	      if (debug_print)
 		fprintf (stderr, "\ncode:%d", code);
@@ -1027,13 +1027,13 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 	         lets not allow such an expression for now.  This will 
 	         be updated when  we find a way to validate this 
 	         expression as legitimate address. 
-	         Till then fall through CR16_INVALID.  */
+	         Till then fall through AMO_INVALID.  */
 	    default:
-	      return CR16_INVALID;
+	      return AMO_INVALID;
 	    }
 
 	  /* Now check if REG can fit into single or pair regs.  */
-	  retval = CR16_REG_REL;
+	  retval = AMO_REG_REL;
 	  base = XEXP (addr, 0);
 	  if (debug_print)
 	    {
@@ -1044,7 +1044,7 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 	    {
 	      if (!LONG_REG_P (REGNO ((XEXP (addr, 0)))))
 		/* REG will result in reg pair.  */
-		retval = CR16_REGP_REL;
+		retval = AMO_REGP_REL;
 	    }
 	  break;
 
@@ -1067,7 +1067,7 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 	    case REG:
 	    case SUBREG:
 	      if (!REG_OK_FOR_INDEX_P (XEXP (addr, 1)))
-		return CR16_INVALID;
+		return AMO_INVALID;
 	      /* OK. REG is a valid index register.  */
 	      index = XEXP (addr, 1);
 	      if (debug_print)
@@ -1077,7 +1077,7 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 		}
 	      break;
 	    default:
-	      return CR16_INVALID;
+	      return AMO_INVALID;
 	    }
 	  /* Check if operand 0 of operand 0 is REGP.  */
 	  switch (GET_CODE (XEXP (XEXP (addr, 0), 0)))
@@ -1089,8 +1089,8 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 		  > BITS_PER_WORD)
 		{
 		  if (REGNO (XEXP (XEXP (addr, 0), 0))
-		      >= CR16_FIRST_DWORD_REGISTER)
-		    return CR16_INVALID;
+		      >= AMO_FIRST_DWORD_REGISTER)
+		    return AMO_INVALID;
 		  base = XEXP (XEXP (addr, 0), 0);
 		  if (debug_print)
 		    {
@@ -1099,10 +1099,10 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 		    }
 		}
 	      else
-		return CR16_INVALID;
+		return AMO_INVALID;
 	      break;
 	    default:
-	      return CR16_INVALID;
+	      return AMO_INVALID;
 	    }
 	  /* Now check if the operand 1 of operand 0 is const_int.  */
 	  if (GET_CODE (XEXP (XEXP (addr, 0), 1)) == CONST_INT)
@@ -1114,28 +1114,28 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 		  debug_rtx (disp);
 		}
 	      if (!UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 20))
-		return CR16_INVALID;
+		return AMO_INVALID;
 	    }
 	  else
-	    return CR16_INVALID;
-	  retval = CR16_INDEX_REGP_REL;
+	    return AMO_INVALID;
+	  retval = AMO_INDEX_REGP_REL;
 	  break;
 	default:
-	  return CR16_INVALID;
+	  return AMO_INVALID;
 	}
       break;
 
     default:
-      return CR16_INVALID;
+      return AMO_INVALID;
     }
 
   /* Check if the base and index registers are valid.  */
   if (base && !(amo_addr_reg_p (base)))
-    return CR16_INVALID;
-  if (base && !(CR16_REG_OK_FOR_BASE_P (base)))
-    return CR16_INVALID;
+    return AMO_INVALID;
+  if (base && !(AMO_REG_OK_FOR_BASE_P (base)))
+    return AMO_INVALID;
   if (index && !(REG_OK_FOR_INDEX_P (index)))
-    return CR16_INVALID;
+    return AMO_INVALID;
 
   /* Write the decomposition to out parameter.  */
   out->base = base;
@@ -1261,19 +1261,19 @@ amo_legitimate_address_p (machine_mode mode ATTRIBUTE_UNUSED,
 
       switch (addrtype)
 	{
-	case CR16_INVALID:
+	case AMO_INVALID:
 	  typestr = "invalid";
 	  break;
-	case CR16_ABSOLUTE:
+	case AMO_ABSOLUTE:
 	  typestr = "absolute";
 	  break;
-	case CR16_REG_REL:
+	case AMO_REG_REL:
 	  typestr = "register relative";
 	  break;
-	case CR16_REGP_REL:
+	case AMO_REGP_REL:
 	  typestr = "register pair relative";
 	  break;
-	case CR16_INDEX_REGP_REL:
+	case AMO_INDEX_REGP_REL:
 	  typestr = "index + register pair relative";
 	  break;
 	default:
@@ -1282,7 +1282,7 @@ amo_legitimate_address_p (machine_mode mode ATTRIBUTE_UNUSED,
       fprintf (stderr, "\namo address type: %s\n", typestr);
     }
 
-  if (addrtype == CR16_INVALID)
+  if (addrtype == AMO_INVALID)
     return FALSE;
 
   if (strict)
@@ -1305,7 +1305,7 @@ amo_legitimate_address_p (machine_mode mode ATTRIBUTE_UNUSED,
   /* Return true if addressing mode is register relative.  */
   if (flag_pic)
     {
-      if (addrtype == CR16_REG_REL || addrtype == CR16_REGP_REL)
+      if (addrtype == AMO_REG_REL || addrtype == AMO_REGP_REL)
 	return TRUE;
       else
 	return FALSE;
@@ -1328,29 +1328,29 @@ amo_address_cost (rtx addr, machine_mode mode ATTRIBUTE_UNUSED,
 
   addrtype = amo_decompose_address (addr, &address, 0, FALSE);
 
-  gcc_assert (addrtype != CR16_INVALID);
+  gcc_assert (addrtype != AMO_INVALID);
 
-  /* CR16_ABSOLUTE            : 3
-     CR16_REG_REL  (disp !=0) : 4
-     CR16_REG_REL  (disp ==0) : 5
-     CR16_REGP_REL (disp !=0) : 6
-     CR16_REGP_REL (disp ==0) : 7
-     CR16_INDEX_REGP_REL (disp !=0) : 8
-     CR16_INDEX_REGP_REL (disp ==0) : 9.  */
+  /* AMO_ABSOLUTE            : 3
+     AMO_REG_REL  (disp !=0) : 4
+     AMO_REG_REL  (disp ==0) : 5
+     AMO_REGP_REL (disp !=0) : 6
+     AMO_REGP_REL (disp ==0) : 7
+     AMO_INDEX_REGP_REL (disp !=0) : 8
+     AMO_INDEX_REGP_REL (disp ==0) : 9.  */
   switch (addrtype)
     {
-    case CR16_ABSOLUTE:
+    case AMO_ABSOLUTE:
       cost += 1;
       break;
-    case CR16_REGP_REL:
+    case AMO_REGP_REL:
       cost += 2;
       /* Fall through.  */
-    case CR16_REG_REL:
+    case AMO_REG_REL:
       cost += 3;
       if (address.disp)
 	cost -= 1;
       break;
-    case CR16_INDEX_REGP_REL:
+    case AMO_INDEX_REGP_REL:
       cost += 7;
       if (address.disp)
 	cost -= 1;
@@ -1439,7 +1439,7 @@ amo_print_operand (FILE * file, rtx x, int code)
 	const char *amo_cmp_str;
 	switch (GET_CODE (x))
 	  {
-	    /* MD: compare (reg, reg or imm) but CR16: cmp (reg or imm, reg)
+	    /* MD: compare (reg, reg or imm) but AMO: cmp (reg or imm, reg)
 	       -> swap all non symmetric ops.  */
 	  case EQ:
 	    amo_cmp_str = "eq";
@@ -1590,7 +1590,7 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
 
   switch (addrtype)
     {
-    case CR16_REG_REL:
+    case AMO_REG_REL:
       if (address.disp)
 	{
 	  if (GET_CODE (address.disp) == UNSPEC)
@@ -1603,17 +1603,17 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
       fprintf (file, "(%s)", reg_names[REGNO (address.base)]);
       break;
 
-    case CR16_ABSOLUTE:
+    case AMO_ABSOLUTE:
       if (address.disp)
 	output_addr_const (file, address.disp);
       else
 	fprintf (file, "0");
       break;
 
-    case CR16_INDEX_REGP_REL:
+    case AMO_INDEX_REGP_REL:
       fprintf (file, "[%s]", reg_names[REGNO (address.index)]);
       /* Fall through.  */
-    case CR16_REGP_REL:
+    case AMO_REGP_REL:
       if (address.disp)
 	{
 	  if (GET_CODE (address.disp) == UNSPEC)
@@ -1744,11 +1744,11 @@ amo_prepare_push_pop_string (int push_or_pop)
 	  else
 	    {
 	      /* Check especially if adding 2 does not cross the MAX_COUNT.  */
-	      if ((word_cnt + ((i < CR16_FIRST_DWORD_REGISTER) ? 1 : 2))
+	      if ((word_cnt + ((i < AMO_FIRST_DWORD_REGISTER) ? 1 : 2))
 		  >= MAX_COUNT)
 		break;
 	      /* Increase word count by 2 for long registers except RA.   */
-	      word_cnt += ((i < CR16_FIRST_DWORD_REGISTER) ? 1 : 2);
+	      word_cnt += ((i < AMO_FIRST_DWORD_REGISTER) ? 1 : 2);
 	    }
 	  ++i;
 	}
@@ -1841,7 +1841,7 @@ amo_create_dwarf_for_multi_push (rtx insn)
       if (current_frame_info.save_regs[i])
 	{
 	  ++num_regs;
-	  if (i < CR16_FIRST_DWORD_REGISTER)
+	  if (i < AMO_FIRST_DWORD_REGISTER)
 	    total_push_bytes += 2;
 	  else
 	    total_push_bytes += 4;
@@ -1868,7 +1868,7 @@ amo_create_dwarf_for_multi_push (rtx insn)
 
 	  for (j = to; j >= from; --j)
 	    {
-	      if (j < CR16_FIRST_DWORD_REGISTER)
+	      if (j < AMO_FIRST_DWORD_REGISTER)
 		{
 		  mode = HImode;
 		  inc = 1;
@@ -1897,7 +1897,7 @@ amo_create_dwarf_for_multi_push (rtx insn)
 
       if (i != RETURN_ADDRESS_REGNUM)
 	{
-	  inc = (i < CR16_FIRST_DWORD_REGISTER) ? 1 : 2;
+	  inc = (i < AMO_FIRST_DWORD_REGISTER) ? 1 : 2;
 	  if (word_cnt + inc >= MAX_COUNT || FRAME_POINTER_REGNUM == i)
 	    {
 	      split_here = 1;
@@ -1920,7 +1920,7 @@ amo_create_dwarf_for_multi_push (rtx insn)
 }
 
 /*
-CompactRISC CR16 Architecture stack layout:
+CompactRISC AMO Architecture stack layout:
 
      0 +---------------------
     |
@@ -1994,7 +1994,7 @@ amo_expand_epilogue (void)
      last statement in function.  */
   int only_popret_RA = (current_frame_info.save_regs[RETURN_ADDRESS_REGNUM]
 			&& (current_frame_info.reg_size 
-			    == CR16_UNITS_PER_DWORD));
+			    == AMO_UNITS_PER_DWORD));
   
   if (frame_pointer_needed)
     {

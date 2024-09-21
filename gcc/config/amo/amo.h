@@ -1,4 +1,4 @@
-/* Definitions of target machine for GNU compiler, for CR16.
+/* Definitions of target machine for GNU compiler, for AMO.
    Copyright (C) 2012-2018 Free Software Foundation, Inc.
    Contributed by KPIT Cummins Infosystems Limited.
 
@@ -18,8 +18,8 @@
    along with GCC; see the file COPYING3.  If not see
    <http://www.gnu.org/licenses/>.  */
    
-#ifndef GCC_CR16_H
-#define GCC_CR16_H
+#ifndef GCC_AMO_H
+#define GCC_AMO_H
 
 #define OBJECT_FORMAT_ELF
 
@@ -49,17 +49,17 @@
 do                                         \
   {                                        \
     builtin_define ("__CR__");             \
-    builtin_define ("__CR16__");           \
-    builtin_define ("__CR16C__");          \
-    if (TARGET_CR16CP)                     \
-      builtin_define ("__CR16CP__");       \
+    builtin_define ("__AMO__");           \
+    builtin_define ("__AMOC__");          \
+    if (TARGET_AMOCP)                     \
+      builtin_define ("__AMOCP__");       \
     else                                   \
-      builtin_define ("__CR16CSTD__");     \
-    if (CR16_TARGET_DATA_NEAR)             \
+      builtin_define ("__AMOCSTD__");     \
+    if (AMO_TARGET_DATA_NEAR)             \
       builtin_define ("__DATA_NEAR__");    \
-    if (CR16_TARGET_DATA_MEDIUM)           \
+    if (AMO_TARGET_DATA_MEDIUM)           \
       builtin_define ("__DATA_MEDIUM__");  \
-    if (CR16_TARGET_DATA_FAR)              \
+    if (AMO_TARGET_DATA_FAR)              \
       builtin_define ("__DATA_FAR__");     \
     if (TARGET_INT32)                      \
       builtin_define ("__INT32__");        \
@@ -77,9 +77,9 @@ while (0)
    line table.  */
 #define DWARF2_ASM_LINE_DEBUG_INFO 1
 
-#define CR16_TARGET_DATA_NEAR   amo_is_data_model (DM_NEAR)
-#define CR16_TARGET_DATA_MEDIUM amo_is_data_model (DM_DEFAULT)
-#define CR16_TARGET_DATA_FAR    amo_is_data_model (DM_FAR)
+#define AMO_TARGET_DATA_NEAR   amo_is_data_model (DM_NEAR)
+#define AMO_TARGET_DATA_MEDIUM amo_is_data_model (DM_DEFAULT)
+#define AMO_TARGET_DATA_FAR    amo_is_data_model (DM_FAR)
 
 /* Storage layout.  */
 #define BITS_BIG_ENDIAN     0
@@ -91,7 +91,7 @@ while (0)
 #define UNITS_PER_WORD      2
 
 /* Units per 32-bit (DWORD).  */
-#define CR16_UNITS_PER_DWORD 4
+#define AMO_UNITS_PER_DWORD 4
 
 #define POINTER_SIZE        32
 
@@ -101,13 +101,13 @@ while (0)
 
 #define FUNCTION_BOUNDARY   BIGGEST_ALIGNMENT
 
-/* Biggest alignment on CR16C+ is 32-bit as internal bus is AMBA based 
-   where as CR16C is proprietary internal bus architecture.  */
-#define BIGGEST_ALIGNMENT   ((TARGET_CR16CP) ? 32 : 16)
+/* Biggest alignment on AMOC+ is 32-bit as internal bus is AMBA based 
+   where as AMOC is proprietary internal bus architecture.  */
+#define BIGGEST_ALIGNMENT   ((TARGET_AMOCP) ? 32 : 16)
 
 #define MAX_FIXED_MODE_SIZE 64
 
-/* In CR16 arrays of chars are word-aligned, so strcpy () will be faster.  */
+/* In AMO arrays of chars are word-aligned, so strcpy () will be faster.  */
 #define DATA_ALIGNMENT(TYPE, ALIGN)              \
   (((TREE_CODE (TYPE) == ARRAY_TYPE)             \
      && (TYPE_MODE (TREE_TYPE (TYPE)) == QImode) \
@@ -159,13 +159,13 @@ while (0)
 /* Register usage.  */
 
 /* First 32-bit register is R12.  */
-#define CR16_FIRST_DWORD_REGISTER   12
+#define AMO_FIRST_DWORD_REGISTER   12
 
 #define FIRST_PSEUDO_REGISTER       16
 
 /* 1 for registers that have pervasive standard uses
    and are not available for the register allocator.
-   On the CR16, only the stack pointer (r15) is such.  */
+   On the AMO, only the stack pointer (r15) is such.  */
 #define FIXED_REGISTERS                               \
   {                                                   \
   /* r0  r1  r2  r3  r4  r5  r6  r7  r8  r9  r10.  */ \
@@ -180,7 +180,7 @@ while (0)
    The latter must include the registers where values are returned
    and the register where structure-value addresses are passed.
  
-   On the CR16, calls clobbers r0-r6 (scratch registers), 
+   On the AMO, calls clobbers r0-r6 (scratch registers), 
    ra (the return address) and sp (the stack pointer).  */
 #define CALL_USED_REGISTERS                           \
   {                                                   \
@@ -283,25 +283,25 @@ enum reg_class
 
 #define INDEX_REG_CLASS      LONG_REGS
 
-#define CR16_REGNO_OK_FOR_BASE_P(REGNO)                  \
+#define AMO_REGNO_OK_FOR_BASE_P(REGNO)                  \
   (((REGNO) < FIRST_PSEUDO_REGISTER)                     \
      || (reg_renumber && ((unsigned) reg_renumber[REGNO] \
                         < FIRST_PSEUDO_REGISTER)))
 
 /* Use even-numbered reg for 64-bit accesses.  */
 #define REGNO_MODE_OK_FOR_BASE_P(REGNO, MODE)	  \
-	(CR16_REGNO_OK_FOR_BASE_P(REGNO)  &&	  \
+	(AMO_REGNO_OK_FOR_BASE_P(REGNO)  &&	  \
 	  ((GET_MODE_SIZE (MODE) > 4  &&  	  \
-	     (REGNO) < CR16_FIRST_DWORD_REGISTER) \
+	     (REGNO) < AMO_FIRST_DWORD_REGISTER) \
 	     ? (((REGNO) & 1) == 0) 		  \
 	     : 1))
 
 /* TODO: For now lets not support index addressing mode.  */
 #define REGNO_OK_FOR_INDEX_P(REGNO)        \
-  (((REGNO >= CR16_FIRST_DWORD_REGISTER)   \
+  (((REGNO >= AMO_FIRST_DWORD_REGISTER)   \
      && ((REGNO) < FIRST_PSEUDO_REGISTER)) \
    || (reg_renumber                        \
-       && (((unsigned) reg_renumber[REGNO] >= CR16_FIRST_DWORD_REGISTER)  \
+       && (((unsigned) reg_renumber[REGNO] >= AMO_FIRST_DWORD_REGISTER)  \
             && ((unsigned) reg_renumber[REGNO] < FIRST_PSEUDO_REGISTER))) \
   )
 
@@ -318,7 +318,7 @@ enum reg_class
    performance.  */
 #define CLASS_MAX_NREGS(CLASS, MODE) \
   (CLASS == LONG_REGS \
-   ? (GET_MODE_SIZE (MODE) + CR16_UNITS_PER_DWORD - 1) / CR16_UNITS_PER_DWORD\
+   ? (GET_MODE_SIZE (MODE) + AMO_UNITS_PER_DWORD - 1) / AMO_UNITS_PER_DWORD\
    : (GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
 
 /* Macros to check the range of integers . These macros were used across
@@ -393,7 +393,7 @@ struct cumulative_args
 #define CUMULATIVE_ARGS struct cumulative_args
 #endif
 
-/* On the CR16 architecture, Varargs routines should receive their parameters 
+/* On the AMO architecture, Varargs routines should receive their parameters 
    on the stack.  */
 
 #define INIT_CUMULATIVE_ARGS(CUM, FNTYPE, LIBNAME, FNDECL, N_NAMED_ARGS) \
@@ -405,7 +405,7 @@ struct cumulative_args
 #undef  FUNCTION_PROFILER
 #define FUNCTION_PROFILER(STREAM, LABELNO)      \
 {                                               \
-  sorry ("profiler support for CR16");          \
+  sorry ("profiler support for AMO");          \
 }
 
 /* Trampolines for nested functions - NOT SUPPORTED.  */
@@ -427,12 +427,12 @@ struct cumulative_args
 #define HAVE_POST_MODIFY_REG    0
 
 #ifdef REG_OK_STRICT
-#define CR16_REG_OK_FOR_BASE_P(X)	CR16_REGNO_OK_FOR_BASE_P (REGNO (X))
+#define AMO_REG_OK_FOR_BASE_P(X)	AMO_REGNO_OK_FOR_BASE_P (REGNO (X))
 #define REG_MODE_OK_FOR_BASE_P(X, MODE)	\
   REGNO_MODE_OK_FOR_BASE_P (REGNO(X), MODE)
 #define REG_OK_FOR_INDEX_P(X)   REGNO_OK_FOR_INDEX_P (REGNO (X))
 #else /* not REG_OK_STRICT.  */
-#define CR16_REG_OK_FOR_BASE_P(X)	1
+#define AMO_REG_OK_FOR_BASE_P(X)	1
 #define REG_MODE_OK_FOR_BASE_P(X, MODE)	1
 #define REG_OK_FOR_INDEX_P(X)   1
 #endif /* not REG_OK_STRICT.  */
@@ -554,8 +554,8 @@ struct cumulative_args
    has (un)conditional branches that can span all of memory.  It is used in
    conjunction with an optimization that partitions hot and cold basic blocks
    into separate sections of the executable.
-   CR16 contains branch instructions that span whole address space.  */
+   AMO contains branch instructions that span whole address space.  */
 #define HAS_LONG_COND_BRANCH    1
 #define HAS_LONG_UNCOND_BRANCH  1
 
-#endif /* End of GCC_CR16_H.  */
+#endif /* End of GCC_AMO_H.  */

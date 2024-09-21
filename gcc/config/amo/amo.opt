@@ -1,4 +1,4 @@
-; Options for the National Semiconductor CR16 port of the compiler.
+; Options for the National Semiconductor AMO port of the compiler.
 ; Copyright (C) 2012-2018 Free Software Foundation, Inc.
 ; Contributed by KPIT Cummins Infosystems Limited.
 ;
@@ -38,12 +38,12 @@ Target RejectNegative JoinedOrMissing Var(amo_data_model)
 Treat data references as near, far or medium. medium is default.
 
 mamoc
-Target RejectNegative Mask(CR16C)
-Generate code for CR16C architecture.
+Target RejectNegative Mask(AMOC)
+Generate code for AMOC architecture.
 
 mamocplus
-Target RejectNegative InverseMask(CR16C,CR16CP)
-Generate code for CR16C+ architecture (Default).
+Target RejectNegative InverseMask(AMOC,AMOCP)
+Generate code for AMOC+ architecture (Default).
 
 mint32
 Target RejectNegative Mask(INT32)
