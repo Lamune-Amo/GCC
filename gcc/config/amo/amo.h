@@ -23,59 +23,18 @@
 
 #define OBJECT_FORMAT_ELF
 
-/* Controlling the driver.  */
-
-/* The GNU C++ standard library requires that these macros be defined.  */
-#undef CPLUSPLUS_CPP_SPEC
-#define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
-
-#undef  STARTFILE_SPEC
-#define STARTFILE_SPEC "crt1.o%s crti.o%s crtbegin.o%s crtlibid.o%s"
-
-#undef  ENDFILE_SPEC
-#define ENDFILE_SPEC "crtend.o%s crtn.o%s"
-
-#undef  MATH_LIBRARY
-#define MATH_LIBRARY ""
-
-#undef  LIB_SPEC
-#define LIB_SPEC "-( -lc %{msim*:-lsim}%{!msim*:-lnosys} -) \
-%{msim*:%{!T*:-Tsim.ld}} \
-%{!T*:%{!msim*: %{-Telf32amo.x}}}"
-
 /* Run-time target specification.  */
 #ifndef TARGET_CPU_CPP_BUILTINS
-#define TARGET_CPU_CPP_BUILTINS()          \
-do                                         \
-  {                                        \
-    builtin_define ("__CR__");             \
-    builtin_define ("__AMO__");           \
-    builtin_define ("__AMOC__");          \
-    if (TARGET_AMOCP)                     \
-      builtin_define ("__AMOCP__");       \
-    else                                   \
-      builtin_define ("__AMOCSTD__");     \
-    if (AMO_TARGET_DATA_NEAR)             \
-      builtin_define ("__DATA_NEAR__");    \
-    if (AMO_TARGET_DATA_MEDIUM)           \
-      builtin_define ("__DATA_MEDIUM__");  \
-    if (AMO_TARGET_DATA_FAR)              \
-      builtin_define ("__DATA_FAR__");     \
-    if (TARGET_INT32)                      \
-      builtin_define ("__INT32__");        \
-  }                                        \
-while (0)
+#define TARGET_CPU_CPP_BUILTINS()               \
+do                                              \
+  {                                             \
+    builtin_assert ("cpu=amo");                 \
+    builtin_assert ("machine=amo");             \
+    builtin_define ("__amo__");                 \
+    builtin_define ("__AMO__");                 \
+    builtin_define ("__AMO_SOFT_FLOAT__");      \
+  while (0)
 #endif
-
-/* Force the generation of dwarf .debug_frame sections even if not
-   compiling -g.  This guarantees that we can unwind the stack.  */
-#define DWARF2_FRAME_INFO 1
-
-#define PREFERRED_DEBUGGING_TYPE DWARF2_DEBUG
-
-/* Generate .file/.loc directives, so that the assembler generates the
-   line table.  */
-#define DWARF2_ASM_LINE_DEBUG_INFO 1
 
 #define AMO_TARGET_DATA_NEAR   amo_is_data_model (DM_NEAR)
 #define AMO_TARGET_DATA_MEDIUM amo_is_data_model (DM_DEFAULT)

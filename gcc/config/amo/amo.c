@@ -382,7 +382,7 @@ amo_compute_save_regs (void)
 	  /* If this reg is used and not call-used (except RA), save it.  */
 	  if (df_regs_ever_live_p (regno)
 	      && (!call_used_regs[regno] || regno == RETURN_ADDRESS_REGNUM))
-	    current_frame_info.save_regs[regno] = 1;
+      current_frame_info.save_regs[regno] = 1;
 	  else
 	    current_frame_info.save_regs[regno] = 0;
 	}
@@ -405,6 +405,8 @@ amo_compute_save_regs (void)
   for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
     if (current_frame_info.save_regs[regno] == 1)
       {
+
+        printf ("used regno: %d\n", regno);
 	current_frame_info.last_reg_to_save = regno;
 	if (regno >= AMO_FIRST_DWORD_REGISTER)
 	  current_frame_info.reg_size += AMO_UNITS_PER_DWORD;
@@ -424,6 +426,7 @@ amo_compute_frame (void)
 
   /* Padding needed for each element of the frame.  */
   current_frame_info.var_size = get_frame_size ();
+  printf ("get_frame_size (): %d\n", get_frame_size ());
 
   /* Align to the stack alignment.  */
   padding_locals = current_frame_info.var_size % stack_alignment;
