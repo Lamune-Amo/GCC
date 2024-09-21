@@ -26,6 +26,7 @@ in source
 /contrib/download_prerequisites
 
 in build 
-../source/configure --prefix=/home/yahong/GCC/install --target=cr16-linux --disable-bootstrap --disable-checking --disable-multilib --without-glib --enable-languages=c
+../source/configure --prefix=/home/yahong/GCC/install --target=amo-linux --disable-bootstrap --disable-checking --disable-multilib --without-glib --enable-languages=c
 make all-gcc CFLAGS="-O0 -g" CPPFLAGS="-O0 -g" -j4
+make check-gcc RUNTESTFLAGS="compile.exp"
 make install 
