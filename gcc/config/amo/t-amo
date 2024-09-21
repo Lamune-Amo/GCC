@@ -16,5 +16,10 @@
 #  along with GCC; see the file COPYING3.  If not see
 #  <http://www.gnu.org/licenses/>.
 
+MULTILIB_OPTIONS     = fPIC mint32 
+MULTILIB_DIRNAMES    = far-pic int32 
+MULTILIB_MATCHES     =
+MULTILIB_EXTRA_OPTS  = mamocplus mdata-model=far
+
 $(out_object_file): gt-amo.h
 

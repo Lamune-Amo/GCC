@@ -1,37 +1,81 @@
-(define_register_constraint "D" "GP_REGS"
-  "@internal
-   General-purpose machine registers")
+;; Predicates of machine description for CR16.
+;; Copyright (C) 2012-2018 Free Software Foundation, Inc.
+;; Contributed by KPIT Cummins Infosystems Limited.
+;;
+;; This file is part of GCC.
+;;
+;; GCC is free software; you can redistribute it and/or modify it
+;; under the terms of the GNU General Public License as published
+;; by the Free Software Foundation; either version 3, or (at your
+;; option) any later version.
+;;
+;; GCC is distributed in the hope that it will be useful, but WITHOUT
+;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+;; License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with GCC; see the file COPYING3.  If not see
+;; <http://www.gnu.org/licenses/>.  
 
-;; Integer
-(define_constraint "Is"
-  "32-bit signed integer constraint"
+;; Constraints
+;; Register constraints
+(define_register_constraint "b" "NOSP_REGS"
+  "@no sp registers")
+
+(define_register_constraint "c" "SHORT_REGS"
+  "@short registers")
+
+(define_register_constraint "d" "LONG_REGS"
+  "@long registers")
+
+;; Integer constraints.
+(define_constraint "I"
+  "A signed 4-bit immediate."
   (and (match_code "const_int")
-       (match_test "IN_RANGE (ival, -2147483648, 2147483647)")))
-
-;; Integer Arithmetic
-(define_constraint "Ia"
-  "16-bit signed integer constraint"
-  (and (match_code "const_int")
-       (match_test "IN_RANGE (ival, -32768, 32767)")))
-
-;; Integer Logical
-(define_constraint "Il"
-  "16-bit unsigned integer constraint"
-  (and (match_code "const_int")
-       (match_test "IN_RANGE (ival, 0, 65535)")))
-
-
-
-(define_constraint "K"
-  "32-bit unsigned constraint."
-  (and (match_code "const_int")
-       (match_test "IN_RANGE (ival, 0, 4294967295)")))
+       (match_test "SIGNED_INT_FITS_N_BITS (ival, 4)")))
 
 (define_constraint "J"
-  "12-bit signed integer constraint."
+  "A signed 5-bit immediate."
   (and (match_code "const_int")
-       (match_test "IN_RANGE (ival, -2048, 2047)")))
+       (match_test "SIGNED_INT_FITS_N_BITS (ival, 5)")))
 
-(define_predicate "call_target_operand"
-  (ior (match_operand 0 "register_operand")
-       (match_code "symbol_ref")))
+(define_constraint "K"
+  "A signed 6-bit immediate."
+  (and (match_code "const_int")
+       (match_test "SIGNED_INT_FITS_N_BITS (ival, 6)")))
+
+(define_constraint "L"
+  "A unsigned 4-bit immediate."
+  (and (match_code "const_int")
+       (match_test "UNSIGNED_INT_FITS_N_BITS (ival, 4)")))
+
+(define_constraint "M"
+  "A unsigned and customized  4-bit immediate."
+  (and (match_code "const_int")
+       (match_test "(IN_RANGE_P (ival, 0, 15) && ((ival != 9) && (ival != 11)))")))
+
+(define_constraint "N"
+  "A signed 16-bit immediate."
+  (and (match_code "const_int")
+       (match_test "IN_RANGE_P (ival, -32768, 32767)")))
+
+(define_constraint "O"
+  "A unsigned 20-bit immediate."
+  (and (match_code "const_int")
+       (match_test "IN_RANGE_P (ival, 0, 1048575)")))
+
+(define_constraint "Q"
+  "A shift QI immediate."
+  (and (match_code "const_int")
+       (match_test "IN_RANGE_P (ival, 0, 7)")))
+
+(define_constraint "R"
+  "A shift HI immediate."
+  (and (match_code "const_int")
+       (match_test "IN_RANGE_P (ival, 0, 15)")))
+
+(define_constraint "S"
+  "A shift SI immediate."
+  (and (match_code "const_int")
+       (match_test "IN_RANGE_P (ival, 0, 31)")))

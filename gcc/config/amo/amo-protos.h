@@ -1,5 +1,6 @@
-/* Exported definitions for target machine AMO.
-   Copyright (C) 2009-2024 Free Software Foundation, Inc.
+/* Prototypes for exported functions defined in amo.c
+   Copyright (C) 2012-2018 Free Software Foundation, Inc.
+   Contributed by KPIT Cummins Infosystems Limited.
 
    This file is part of GCC.
 
@@ -17,30 +18,82 @@
    along with GCC; see the file COPYING3.  If not see
    <http://www.gnu.org/licenses/>.  */
 
-#ifndef _AMO_PROTOS_H_
-#define _AMO_PROTOS_H_
+#ifndef GCC_CR16_PROTOS_H
+#define GCC_CR16_PROTOS_H
 
-extern bool amo_dummy_insn_cond(machine_mode mdoe);
-extern enum reg_class amo_regno_to_class(int);
-extern int amo_valid_regno_for_base_p(int);
-extern int amo_valid_regno_for_index_p(int);
+/* Register usage.  */
+extern enum reg_class amo_regno_reg_class (int);
 
-extern void amo_init_cumulative_args(CUMULATIVE_ARGS *ca,
-                                       tree fn_type,
-                                       rtx libname,
-                                       tree fn_decl,
-                                       int num_named);
+/* Passing function arguments.  */
+extern int amo_function_arg_regno_p (int);
 
-extern HOST_WIDE_INT amo_initial_elimination_offset(int, int);
+#ifdef TREE_CODE
+#ifdef RTX_CODE
 
-extern bool amo_valid_movsi_insn(machine_mode mdoe, rtx operands[2]);
+extern void amo_init_cumulative_args (CUMULATIVE_ARGS *, tree, rtx);
 
-extern void amo_expand_movi(machine_mode mode, rtx *operands);
-extern void amo_expand_cond_branch(rtx *operands);
+#endif /* RTX_CODE.  */
+#endif /* TREE_CODE.  */
 
-extern void amo_expand_call(rtx *operands);
+/* Enumeration giving the various data models we support.  */
+enum data_model_type
+{
+  DM_DEFAULT,		/* Default data model (in CR16C/C+ - up to 16M).  */
+  DM_NEAR,		/* Near data model    (in CR16C/C+ - up to 1M).  */
+  DM_FAR,		/* Far data model     (in CR16C+   - up to 4G)
+			   (in CR16C    - up to 16M).  */
+  ILLEGAL_DM		/* Illegal data model.  */
+};
 
+#ifdef RTX_CODE
+
+/* Addressing Modes.  */
+struct amo_address
+{
+  rtx base;	 	/* Base register: Any register or register pair.  */
+  rtx index;		/* Index register: If one is present.  */
+  rtx disp;		/* Displacement or Absolute address.  */
+  enum data_model_type data;	/* data ref type.  */
+  int code;		/* Whether the address is code address. 
+			   0 - data, 1 - code label, 2 - function label.  */
+};
+
+enum amo_addrtype
+{
+  CR16_INVALID,
+  CR16_REG_REL,
+  CR16_REGP_REL,
+  CR16_INDEX_REGP_REL,
+  CR16_ABSOLUTE
+};
+
+extern void notice_update_cc (rtx);
+extern int amo_operand_bit_pos (int val, int bitval);
+extern void amo_decompose_const (rtx x, int *code,
+				  enum data_model_type *data,
+				  bool treat_as_const);
+extern enum amo_addrtype amo_decompose_address (rtx addr,
+						  struct amo_address *out,
+						  bool debug_print,
+						  bool treat_as_const);
+extern int amo_const_double_ok (rtx op);
+extern int legitimate_pic_operand_p (rtx);
+extern rtx legitimize_pic_address (rtx, machine_mode, rtx);
+
+
+/* Prologue/Epilogue functions.  */
+extern int amo_initial_elimination_offset (int, int);
+extern char *amo_prepare_push_pop_string (int);
 extern void amo_expand_prologue (void);
-extern void amo_expand_epilogue (int, int, bool);
+extern void amo_expand_epilogue (void);
+extern const char *amo_emit_add_sub_di (rtx *, enum rtx_code);
+extern const char *amo_emit_logical_di (rtx *, enum rtx_code);
 
-#endif
+#endif /* RTX_CODE.  */
+
+/* Handling the "interrupt" attribute.  */
+extern int amo_interrupt_function_p (void);
+extern bool amo_is_data_model (enum data_model_type);
+extern poly_int64 amo_push_rounding (poly_int64);
+
+#endif /* Not GCC_CR16_PROTOS_H.  */ 
