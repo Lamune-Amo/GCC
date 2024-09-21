@@ -33,6 +33,7 @@ do                                              \
     builtin_define ("__amo__");                 \
     builtin_define ("__AMO__");                 \
     builtin_define ("__AMO_SOFT_FLOAT__");      \
+  }                                             \
   while (0)
 #endif
 
