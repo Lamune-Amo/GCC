@@ -405,8 +405,6 @@ amo_compute_save_regs (void)
   for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
     if (current_frame_info.save_regs[regno] == 1)
       {
-
-        printf ("used regno: %d\n", regno);
 	current_frame_info.last_reg_to_save = regno;
 	if (regno >= AMO_FIRST_DWORD_REGISTER)
 	  current_frame_info.reg_size += AMO_UNITS_PER_DWORD;
@@ -426,7 +424,6 @@ amo_compute_frame (void)
 
   /* Padding needed for each element of the frame.  */
   current_frame_info.var_size = get_frame_size ();
-  printf ("get_frame_size (): %d\n", get_frame_size ());
 
   /* Align to the stack alignment.  */
   padding_locals = current_frame_info.var_size % stack_alignment;
@@ -1983,6 +1980,19 @@ amo_expand_prologue (void)
          pointing now to the locals.  */
       insn = emit_move_insn (frame_pointer_rtx, stack_pointer_rtx);
     }
+
+  printf ("-- prologue -------------------------------------------------\n");
+  printf ("local var size: %d\n", current_frame_info.var_size);
+  printf ("reg saved size: %d\n", current_frame_info.reg_size);
+  printf ("regs: ");
+  for (int regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
+  {
+    if (current_frame_info.save_regs[regno])
+    {
+      printf ("r%d ", regno);
+    }
+  }
+  printf ("\n");
 }
 
 /* Generate insn that updates the stack for local variables and padding 
@@ -2049,6 +2059,19 @@ amo_expand_epilogue (void)
 			     (GEN_INT (current_frame_info.reg_size)));
       RTX_FRAME_RELATED_P (insn) = 1;
     }
+
+  printf ("-- epilogue -------------------------------------------------");
+  printf ("local var size: %d\n", current_frame_info.var_size);
+  printf ("reg saved size: %d\n", current_frame_info.reg_size);
+  printf ("regs: ");
+  for (int regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
+  {
+    if (current_frame_info.save_regs[regno])
+    {
+      printf ("r%d ", regno);
+    }
+  }
+  printf ("\n");
 }
 
 /* Implements FRAME_POINTER_REQUIRED.  */
