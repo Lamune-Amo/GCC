@@ -260,7 +260,10 @@ enum reg_class
 
 /* TODO: For now lets not support index addressing mode.  */
 
-#define REGNO_OK_FOR_INDEX_P(REGNO)        \
+#define REGNO_OK_FOR_BASE_P(REGNO) \
+  (REGNO >= 0 && REGNO < FIRST_PSEUDO_REGISTER)
+
+#define REGNO_OK_FOR_INDEX_P(REGNO) \
   (REGNO >= 0 && REGNO < FIRST_PSEUDO_REGISTER)
 
 #define PREFERRED_RELOAD_CLASS(X, CLASS) CLASS
