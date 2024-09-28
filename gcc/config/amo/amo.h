@@ -258,6 +258,9 @@ enum reg_class
      || (reg_renumber && ((unsigned) reg_renumber[REGNO] \
                         < FIRST_PSEUDO_REGISTER)))
 
+/* Use even-numbered reg for 64-bit accesses.  */
+#define REGNO_MODE_OK_FOR_BASE_P(REGNO, MODE) AMO_REGNO_OK_FOR_BASE_P(REGNO)
+
 /* TODO: For now lets not support index addressing mode.  */
 
 #define REGNO_OK_FOR_BASE_P(REGNO) \
@@ -389,17 +392,16 @@ struct cumulative_args
 #define HAVE_POST_MODIFY_DISP   0
 #define HAVE_POST_MODIFY_REG    0
 
-//#ifdef REG_OK_STRICT
-//#define AMO_REG_OK_FOR_BASE_P(X)	AMO_REGNO_OK_FOR_BASE_P (REGNO (X))
-//#define REG_MODE_OK_FOR_BASE_P(X, MODE)	\
+#ifdef REG_OK_STRICT
+#define AMO_REG_OK_FOR_BASE_P(X)	AMO_REGNO_OK_FOR_BASE_P (REGNO (X))
+#define REG_MODE_OK_FOR_BASE_P(X, MODE)	\
   REGNO_MODE_OK_FOR_BASE_P (REGNO(X), MODE)
-//#define REG_OK_FOR_INDEX_P(X)   REGNO_OK_FOR_INDEX_P (REGNO (X))
-//#else /* not REG_OK_STRICT.  */
+#define REG_OK_FOR_INDEX_P(X)   REGNO_OK_FOR_INDEX_P (REGNO (X))
+#else /* not REG_OK_STRICT.  */
 #define AMO_REG_OK_FOR_BASE_P(X)	1
 #define REG_MODE_OK_FOR_BASE_P(X, MODE)	1
 #define REG_OK_FOR_INDEX_P(X)   1
-//#endif /* not REG_OK_STRICT.  */
-/* TODO */
+#endif /* not REG_OK_STRICT.  */
 
 /* Assume best case (branch predicted).  */
 #define BRANCH_COST(speed_p, predictable_p)       2
