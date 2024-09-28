@@ -48,14 +48,14 @@ do                                              \
 
 #define WORDS_BIG_ENDIAN    0
 
-#define UNITS_PER_WORD      2
+#define UNITS_PER_WORD      4
 
 /* Units per 32-bit (DWORD).  */
-#define AMO_UNITS_PER_DWORD 4
+#define AMO_UNITS_PER_DWORD 64 // not for precompile
 
 #define POINTER_SIZE        32
 
-#define PARM_BOUNDARY       16
+#define PARM_BOUNDARY       32
 
 #define STACK_BOUNDARY      (MAX (BIGGEST_ALIGNMENT, PARM_BOUNDARY))
 
@@ -63,25 +63,37 @@ do                                              \
 
 /* Biggest alignment on AMOC+ is 32-bit as internal bus is AMBA based 
    where as AMOC is proprietary internal bus architecture.  */
-#define BIGGEST_ALIGNMENT   ((TARGET_AMOCP) ? 32 : 16)
+#define BIGGEST_ALIGNMENT   32
 
 #define MAX_FIXED_MODE_SIZE 64
 
-/* In AMO arrays of chars are word-aligned, so strcpy () will be faster.  */
-#define DATA_ALIGNMENT(TYPE, ALIGN)              \
-  (((TREE_CODE (TYPE) == ARRAY_TYPE)             \
-     && (TYPE_MODE (TREE_TYPE (TYPE)) == QImode) \
-     && ((ALIGN) < BITS_PER_WORD))               \
-     ? (BITS_PER_WORD) : (ALIGN))
+/* Align definitions of arrays, unions and structures so that
+   initializations and copies can be made more efficient.  This is not
+   ABI-changing, so it only affects places where we can see the
+   definition.  Increasing the alignment tends to introduce padding,
+   so don't do this when optimizing for size/conserving stack space.  */
+#define AMO_EXPAND_ALIGNMENT(COND, EXP, ALIGN)			\
+  (((COND) && ((ALIGN) < BITS_PER_WORD)					\
+    && (TREE_CODE (EXP) == ARRAY_TYPE					\
+	|| TREE_CODE (EXP) == UNION_TYPE				\
+	|| TREE_CODE (EXP) == RECORD_TYPE)) ? BITS_PER_WORD : (ALIGN))
+
+/* Align global data.  */
+#define DATA_ALIGNMENT(EXP, ALIGN)			\
+  AMO_EXPAND_ALIGNMENT (!optimize_size, EXP, ALIGN)
+
+  /* Similarly, make sure that objects on the stack are sensibly aligned.  */
+#define LOCAL_ALIGNMENT(EXP, ALIGN)				\
+  AMO_EXPAND_ALIGNMENT (!flag_conserve_stack, EXP, ALIGN)
 
 #define STRICT_ALIGNMENT 0
 
 #define PCC_BITFIELD_TYPE_MATTERS 1
 
 /* Layout of source language data types.  */
-#define INT_TYPE_SIZE       (TARGET_INT32 ? 32 : 16)
-
 #define SHORT_TYPE_SIZE     16
+
+#define INT_TYPE_SIZE       32
 
 #define LONG_TYPE_SIZE      32
 
@@ -95,13 +107,11 @@ do                                              \
 
 #define DEFAULT_SIGNED_CHAR 1
 
-#define SIZE_TYPE           "long unsigned int"
+#define SIZE_TYPE           "unsigned int"
+ 
+#define PTRDIFF_TYPE        "int"
 
-#define PTRDIFF_TYPE        "long int"
-
-#define WCHAR_TYPE          "short unsigned int"
-
-#define WCHAR_TYPE_SIZE     16
+#define WCHAR_TYPE          "unsigned int"
 
 /* By default, the C++ compiler will use the lowest bit of the pointer
    to function to indicate a pointer-to-member-function points to a
@@ -119,20 +129,24 @@ do                                              \
 /* Register usage.  */
 
 /* First 32-bit register is R12.  */
-#define AMO_FIRST_DWORD_REGISTER   12
+#define AMO_FIRST_DWORD_REGISTER   12 // TODO
 
-#define FIRST_PSEUDO_REGISTER       16
+#define FIRST_PSEUDO_REGISTER      32
 
 /* 1 for registers that have pervasive standard uses
    and are not available for the register allocator.
-   On the AMO, only the stack pointer (r15) is such.  */
-#define FIXED_REGISTERS                               \
-  {                                                   \
-  /* r0  r1  r2  r3  r4  r5  r6  r7  r8  r9  r10.  */ \
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,        \
-  /* r11 r12 r13 ra  sp.  */                          \
-    0,  0,  0,  0,  1                                 \
-  }      
+   On the AMO, only the stack pointer (r29) is such.  */
+#define FIXED_REGISTERS                                                          \
+  {                                                                              \
+  /* r0 r1 r2 r3 r4 r5 r6 r7 */                                                  \
+    0, 0, 0, 0, 0, 0, 0, 0,                                                      \
+  /* r8 r9 r10 r11 r12 r13 r14 r15 */                                            \
+    0, 0, 0, 0, 0, 0, 0, 0,                                                      \
+  /* r16 r17 r18 r19 r20 r21 r22 r23 */                                          \
+    0, 0, 0, 0, 0, 0, 0, 0,                                                      \
+  /* r24 r25 r26 r27 r28 fp sp lr */                                             \
+    0, 0, 0, 0, 0, 0, 1, 1                                                       \
+  }
 
 /* 1 for registers not available across function calls.
    These must include the FIXED_REGISTERS and also any
@@ -142,12 +156,16 @@ do                                              \
  
    On the AMO, calls clobbers r0-r6 (scratch registers), 
    ra (the return address) and sp (the stack pointer).  */
-#define CALL_USED_REGISTERS                           \
-  {                                                   \
-  /* r0  r1  r2  r3  r4  r5  r6  r7  r8  r9  r10.  */ \
-    1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,        \
-  /* r11 r12 r13 ra  sp.  */                          \
-    0,  0,  0,  1,  1                                 \
+#define CALL_USED_REGISTERS                                                    \
+  {                                                                              \
+  /* r0 r1 r2 r3 r4 r5 r6 r7 */                                                  \
+    1, 1, 1, 1, 1, 1, 1, 1,                                                      \
+  /* r8 r9 r10 r11 r12 r13 r14 r15 */                                            \
+    1, 1, 1, 1, 1, 1, 1, 1,                                                      \
+  /* r16 r17 r18 r19 r20 r21 r22 r23 */                                          \
+    0, 0, 0, 0, 0, 0, 0, 0,                                                      \
+  /* r24 r25 r26 r27 r28 fp sp lr */                                             \
+    0, 0, 0, 0, 0, 0, 1, 1                                                       \
   }
 
 /* Returns 1 if the register is longer than word size, 0 otherwise.  */
@@ -166,15 +184,12 @@ do                                              \
 
 /* Exception handling stuff.  */
 
-/*To ensure correct dwarf unwinding.  */
-#define LIBGCC2_UNWIND_ATTRIBUTE __attribute__((optimize ("no-gcse","no-dse")))
-
 #define gen_rtx_RA	gen_rtx_REG (Pmode, RETURN_ADDRESS_REGNUM)
 
+
+/* TODO */
 /* Use (r8,r7) and (r10,r9) to pass exception handling information.  */
 #define EH_RETURN_DATA_REGNO(N) (((N) < 2) ? (N*2 + 7) : INVALID_REGNUM)
-
-#define DWARF2_UNWIND_INFO 1
 
 /* (r5,r4) holds a stack adjustment for returning to a handler.  */
 #define EH_RETURN_STACKADJ_RTX 		gen_rtx_REG (Pmode, 4)
@@ -183,12 +198,7 @@ do                                              \
   gen_rtx_MEM (Pmode, plus_constant (Pmode, arg_pointer_rtx, -4))
 
 #define INCOMING_RETURN_ADDR_RTX	gen_rtx_RA
-
-#define DWARF_FRAME_RETURN_COLUMN	\
-  DWARF_FRAME_REGNUM (RETURN_ADDRESS_REGNUM)
-
-#define INCOMING_FRAME_SP_OFFSET		0	
-#define FRAME_POINTER_CFA_OFFSET(FNDECL)	0	
+/* TODO_END */
 
 /* A C expression whose value is RTL representing the value of the return
    address for the frame COUNT steps up from the current frame.  */
@@ -224,12 +234,12 @@ enum reg_class
 #define REG_CLASS_CONTENTS			     		\
   {						     		\
     {0x00000000}, /* NO_REGS		             */  	\
-    {0x00000FFF}, /* SHORT_REGS 	: 0 - 11     */   	\
-    {0x0000F000}, /* LONG_REGS 		: 12 - 15    */  	\
-    {0x00007FFF}, /* NOSP_REGS 		: 0 - 14     */   	\
-    {0x0000F555}, /* DOUBLE_BASE_REGS   : 2,4,6,8,10 */  	\
-    {0x0000FFFF}, /* GENERAL_REGS	: 0 - 15     */  	\
-    {0x0000FFFF}  /* ALL_REGS 		: 0 - 15     */  	\
+    {0x00000000}, /* SHORT_REGS 	: x    */   	\
+    {0xFFFFFFFF}, /* LONG_REGS 		: 0 - 31    */  	\
+    {0x1FFFFFFF}, /* NOSP_REGS 		: 0 - 28     */   	\
+    {0x00000000}, /* DOUBLE_BASE_REGS   : x */  	\
+    {0xFFFFFFFF}, /* GENERAL_REGS	: 0 - 31     */  	\
+    {0xFFFFFFFF}  /* ALL_REGS 		: 0 - 31     */  	\
   }
 
 #define TARGET_SMALL_REGISTER_CLASSES_FOR_MODE_P  hook_bool_mode_true 
@@ -238,35 +248,24 @@ enum reg_class
 
 #define BASE_REG_CLASS      GENERAL_REGS
 
-#define MODE_BASE_REG_CLASS(MODE) \
+//#define MODE_BASE_REG_CLASS(MODE) \
   (GET_MODE_SIZE (MODE) <= 4 ?  (BASE_REG_CLASS) :  (DOUBLE_BASE_REGS))
 
-#define INDEX_REG_CLASS      LONG_REGS
+#define INDEX_REG_CLASS     GENERAL_REGS
 
 #define AMO_REGNO_OK_FOR_BASE_P(REGNO)                  \
   (((REGNO) < FIRST_PSEUDO_REGISTER)                     \
      || (reg_renumber && ((unsigned) reg_renumber[REGNO] \
                         < FIRST_PSEUDO_REGISTER)))
 
-/* Use even-numbered reg for 64-bit accesses.  */
-#define REGNO_MODE_OK_FOR_BASE_P(REGNO, MODE)	  \
-	(AMO_REGNO_OK_FOR_BASE_P(REGNO)  &&	  \
-	  ((GET_MODE_SIZE (MODE) > 4  &&  	  \
-	     (REGNO) < AMO_FIRST_DWORD_REGISTER) \
-	     ? (((REGNO) & 1) == 0) 		  \
-	     : 1))
-
 /* TODO: For now lets not support index addressing mode.  */
+
 #define REGNO_OK_FOR_INDEX_P(REGNO)        \
-  (((REGNO >= AMO_FIRST_DWORD_REGISTER)   \
-     && ((REGNO) < FIRST_PSEUDO_REGISTER)) \
-   || (reg_renumber                        \
-       && (((unsigned) reg_renumber[REGNO] >= AMO_FIRST_DWORD_REGISTER)  \
-            && ((unsigned) reg_renumber[REGNO] < FIRST_PSEUDO_REGISTER))) \
-  )
+  (REGNO >= 0 && REGNO < FIRST_PSEUDO_REGISTER)
 
 #define PREFERRED_RELOAD_CLASS(X, CLASS) CLASS
 
+/* TODO */
 /* The maximum number of consecutive registers of class CLASS needed to
    hold a value of mode MODE.
    On the CompactRISC architecture, the size of MODE in words.
@@ -305,19 +304,20 @@ enum reg_class
    || (GET_CODE (OP) == MEM && GET_CODE (XEXP (OP, 0)) == PLUS \
        && GET_CODE (XEXP ((XEXP (OP, 0)), 0)) == REG \
        && GET_CODE (XEXP ((XEXP (OP, 0)), 1)) == CONST_INT))
+/* TODO_END */
 
 /* Stack layout and calling conventions.  */
 #define STACK_GROWS_DOWNWARD 1
 
-#define STACK_POINTER_REGNUM    15
+#define ARG_POINTER_REGNUM      28
 
-#define FRAME_POINTER_REGNUM    13
+#define FRAME_POINTER_REGNUM    29
 
-#define ARG_POINTER_REGNUM      12
+#define STACK_POINTER_REGNUM    30
 
 #define STATIC_CHAIN_REGNUM     1
 
-#define RETURN_ADDRESS_REGNUM   14
+#define RETURN_ADDRESS_REGNUM   31
 
 #define FIRST_PARM_OFFSET(FNDECL) 0
 
@@ -369,7 +369,7 @@ struct cumulative_args
 }
 
 /* Trampolines for nested functions - NOT SUPPORTED.  */
-#define TRAMPOLINE_SIZE    16
+#define TRAMPOLINE_SIZE    32
 
 /* ADDRESSING MODES.  */
 
@@ -379,23 +379,24 @@ struct cumulative_args
    || GET_CODE (X) == CONST         \
    || GET_CODE (X) == CONST_INT)
 
-#define MAX_REGS_PER_ADDRESS    2
+#define MAX_REGS_PER_ADDRESS    1
 
 #define HAVE_POST_INCREMENT     0
 #define HAVE_POST_DECREMENT     0
 #define HAVE_POST_MODIFY_DISP   0
 #define HAVE_POST_MODIFY_REG    0
 
-#ifdef REG_OK_STRICT
-#define AMO_REG_OK_FOR_BASE_P(X)	AMO_REGNO_OK_FOR_BASE_P (REGNO (X))
-#define REG_MODE_OK_FOR_BASE_P(X, MODE)	\
+//#ifdef REG_OK_STRICT
+//#define AMO_REG_OK_FOR_BASE_P(X)	AMO_REGNO_OK_FOR_BASE_P (REGNO (X))
+//#define REG_MODE_OK_FOR_BASE_P(X, MODE)	\
   REGNO_MODE_OK_FOR_BASE_P (REGNO(X), MODE)
-#define REG_OK_FOR_INDEX_P(X)   REGNO_OK_FOR_INDEX_P (REGNO (X))
-#else /* not REG_OK_STRICT.  */
+//#define REG_OK_FOR_INDEX_P(X)   REGNO_OK_FOR_INDEX_P (REGNO (X))
+//#else /* not REG_OK_STRICT.  */
 #define AMO_REG_OK_FOR_BASE_P(X)	1
 #define REG_MODE_OK_FOR_BASE_P(X, MODE)	1
 #define REG_OK_FOR_INDEX_P(X)   1
-#endif /* not REG_OK_STRICT.  */
+//#endif /* not REG_OK_STRICT.  */
+/* TODO */
 
 /* Assume best case (branch predicted).  */
 #define BRANCH_COST(speed_p, predictable_p)       2
@@ -408,22 +409,24 @@ struct cumulative_args
 
 /* Dividing the output into sections.  */
 
-#define TEXT_SECTION_ASM_OP "\t.section\t.text"
+#define TEXT_SECTION_ASM_OP "\t.text"
 
-#define DATA_SECTION_ASM_OP "\t.section\t.data"
+#define DATA_SECTION_ASM_OP "\t.data"
 
-#define BSS_SECTION_ASM_OP  "\t.section\t.bss"
+#define BSS_SECTION_ASM_OP  "\t.bss"
 
 /* Position independent code (PIC).  */
 /* NEAR_PIC for -fpic option.  */
 
+/* TODO */
 #define NEAR_PIC 1
                                       
 /* FAR_PIC for -fPIC option.  */                                                                                       
 
 #define FAR_PIC  2
+/* TODO_END */
 
-#define PIC_OFFSET_TABLE_REGNUM  12
+#define PIC_OFFSET_TABLE_REGNUM  28
 
 #define LEGITIMATE_PIC_OPERAND_P(X) legitimate_pic_operand_p (X)       
 
@@ -432,7 +435,7 @@ struct cumulative_args
 /* Character to start a comment.  */
 #define ASM_COMMENT_START "#"
 
-#define GLOBAL_ASM_OP "\t.globl\t"
+#define GLOBAL_ASM_OP "\t.global\t"
 
 #undef USER_LABEL_PREFIX
 #define USER_LABEL_PREFIX "_"
@@ -462,18 +465,21 @@ struct cumulative_args
 /* Switch into a generic section.  */
 #define TARGET_ASM_NAMED_SECTION	default_elf_asm_named_section
 
+/* TODO */
 #undef INIT_SECTION_ASM_OP
 #define INIT_SECTION_ASM_OP		"\t.section\t.init"
 
 #undef FINI_SECTION_ASM_OP
 #define FINI_SECTION_ASM_OP		"\t.section\t.fini"
+/* TODO_END */
 
 /* Instruction output.  */
-
-#define REGISTER_NAMES                                     \
-  {                                                        \
-    "r0",  "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7", \
-    "r8",  "r9",  "r10", "r11", "r12", "r13", "ra",  "sp"  \
+#define REGISTER_NAMES                                                         \
+  {                                                                              \
+    "r0",  "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7",                       \
+    "r8",  "r9",  "r10", "r11", "r12", "r13", "r14", "r15",                      \
+    "r16", "r17", "r18", "r19", "r20", "r21", "r22", "r23",                      \
+    "r24", "r25", "r26", "r27", "r28", "fp", "sp", "lr"						   \
   }
 
 /* Output of dispatch tables.  */
@@ -481,7 +487,7 @@ struct cumulative_args
 /* Revisit. No PC relative case as label expressions are not 
    properly supported in binutils else we could have done this:
    #define CASE_VECTOR_PC_RELATIVE (optimize_size ? 1 : 0).  */
-#define CASE_VECTOR_PC_RELATIVE 0
+#define CASE_VECTOR_PC_RELATIVE 1
 
 #define ASM_OUTPUT_ADDR_DIFF_ELT(FILE, BODY, VALUE, REL)    \
   ((GET_MODE (BODY) == QImode)                              \
@@ -508,14 +514,6 @@ struct cumulative_args
 
 #define Pmode SImode
 
-#define FUNCTION_MODE QImode
-
-/* Define this boolean macro(s) to indicate whether or not your architecture
-   has (un)conditional branches that can span all of memory.  It is used in
-   conjunction with an optimization that partitions hot and cold basic blocks
-   into separate sections of the executable.
-   AMO contains branch instructions that span whole address space.  */
-#define HAS_LONG_COND_BRANCH    1
-#define HAS_LONG_UNCOND_BRANCH  1
+#define FUNCTION_MODE SImode
 
 #endif /* End of GCC_AMO_H.  */
