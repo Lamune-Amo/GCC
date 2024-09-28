@@ -904,13 +904,13 @@
 
 ;;  Call Instructions
 (define_expand "call"
-  [(call (match_operand:QI 0 "memory_operand" "")
+  [(call (match_operand:SI 0 "memory_operand" "")
 	 (match_operand 1 "" ""))]
   ""
   {
     if (flag_pic && ! legitimate_pic_operand_p (operands[0]))
       {
-	operands[0] = gen_const_mem (QImode,
+	operands[0] = gen_const_mem (SImode,
 	legitimize_pic_address (XEXP (operands[0], 0), Pmode, 0));
 	emit_call_insn (gen_amo_call (operands[0], operands[1]));
       }
@@ -922,7 +922,7 @@
 
 (define_expand "amo_call"
   [(parallel
-    [(call (match_operand:QI 0 "memory_operand" "")
+    [(call (match_operand:SI 0 "memory_operand" "")
 	   (match_operand 1 "" ""))
    (clobber (reg:SI RA_REGNUM))])]
   ""
@@ -930,7 +930,7 @@
 )
 
 (define_insn "amo_call_insn_branch_pic"
-  [(call (mem:QI (match_operand:SI 0 "call_imm_operand" "i"))
+  [(call (mem:SI (match_operand:SI 0 "call_imm_operand" "i"))
 	 (match_operand 1 "" ""))
    (clobber (match_operand:SI 2 "register_operand" "+r"))]
   "flag_pic == FAR_PIC"
@@ -944,7 +944,7 @@
 )
 
 (define_insn "amo_call_insn_branch"
-  [(call (mem:QI (match_operand:SI 0 "call_imm_operand" "i"))
+  [(call (mem:SI (match_operand:SI 0 "call_imm_operand" "i"))
 	 (match_operand 1 "" ""))
    (clobber (match_operand:SI 2 "register_operand" "+r"))]
   "flag_pic == 0 || flag_pic == NEAR_PIC"
@@ -965,7 +965,7 @@
 )
 
 (define_insn "amo_call_insn_jump"
-  [(call (mem:QI (match_operand:SI 0 "register_operand" "r"))
+  [(call (mem:SI (match_operand:SI 0 "register_operand" "r"))
 	 (match_operand 1 "" ""))
    (clobber (match_operand:SI 2 "register_operand" "+r"))]
   ""
@@ -977,13 +977,13 @@
 
 (define_expand "call_value"
   [(set (match_operand 0 "general_operand" "")
-	(call (match_operand:QI 1 "memory_operand" "")
+	(call (match_operand:SI 1 "memory_operand" "")
 	      (match_operand 2 "" "")))]
   ""
   {
     if (flag_pic && !legitimate_pic_operand_p (operands[1]))
       {
-	operands[1] = gen_const_mem (QImode,
+	operands[1] = gen_const_mem (SImode,
 	legitimize_pic_address (XEXP (operands[1], 0), Pmode, 0));
 	emit_call_insn (gen_amo_call_value (operands[0], operands[1], operands[2]));
       }
@@ -1005,7 +1005,7 @@
 
 (define_insn "amo_call_value_insn_branch_pic"
   [(set (match_operand 0 "" "=g")
-	(call (mem:QI (match_operand:SI 1 "call_imm_operand" "i"))
+	(call (mem:SI (match_operand:SI 1 "call_imm_operand" "i"))
 	      (match_operand 2 "" "")))
    (clobber (match_operand:SI 3 "register_operand" "+r"))]
   "flag_pic == FAR_PIC"
@@ -1020,7 +1020,7 @@
 
 (define_insn "amo_call_value_insn_branch"
   [(set (match_operand 0 "" "=g")
-	(call (mem:QI (match_operand:SI 1 "call_imm_operand" "i"))
+	(call (mem:SI (match_operand:SI 1 "call_imm_operand" "i"))
 	      (match_operand 2 "" "")))
    (clobber (match_operand:SI 3 "register_operand" "+r"))]
   "flag_pic == 0 || flag_pic == NEAR_PIC"
@@ -1045,7 +1045,7 @@
 
 (define_insn "amo_call_value_insn_jump"
   [(set (match_operand 0 "" "=g")
-	(call (mem:QI (match_operand:SI 1 "register_operand" "r"))
+	(call (mem:SI (match_operand:SI 1 "register_operand" "r"))
 	      (match_operand 2 "" "")))
    (clobber (match_operand:SI 3 "register_operand" "+r"))]
   ""
