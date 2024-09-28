@@ -405,11 +405,8 @@ amo_compute_save_regs (void)
   for (regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
     if (current_frame_info.save_regs[regno] == 1)
       {
-	current_frame_info.last_reg_to_save = regno;
-	if (regno >= AMO_FIRST_DWORD_REGISTER)
-	  current_frame_info.reg_size += AMO_UNITS_PER_DWORD;
-	else
-	  current_frame_info.reg_size += UNITS_PER_WORD;
+        current_frame_info.last_reg_to_save = regno;
+        current_frame_info.reg_size += UNITS_PER_WORD;
       }
 }
 
@@ -467,10 +464,7 @@ amo_initial_elimination_offset (int from, int to)
 enum reg_class
 amo_regno_reg_class (int regno)
 {
-  if ((regno >= 0) && (regno < AMO_FIRST_DWORD_REGISTER))
-    return SHORT_REGS;
-
-  if ((regno >= AMO_FIRST_DWORD_REGISTER) && (regno < FIRST_PSEUDO_REGISTER))
+  if ((regno >= 0) && (regno < FIRST_PSEUDO_REGISTER))
     return LONG_REGS;
 
   return NO_REGS;
@@ -481,8 +475,6 @@ amo_regno_reg_class (int regno)
 static unsigned int
 amo_hard_regno_nregs (unsigned int regno, machine_mode mode)
 {
-  if (regno >= AMO_FIRST_DWORD_REGISTER)
-    return CEIL (GET_MODE_SIZE (mode), AMO_UNITS_PER_DWORD);
   return CEIL (GET_MODE_SIZE (mode), UNITS_PER_WORD);
 }
 
@@ -1088,9 +1080,11 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 	      if (GET_MODE_BITSIZE (GET_MODE (XEXP (XEXP (addr, 0), 0)))
 		  > BITS_PER_WORD)
 		{
+      /*
 		  if (REGNO (XEXP (XEXP (addr, 0), 0))
 		      >= AMO_FIRST_DWORD_REGISTER)
 		    return AMO_INVALID;
+       */
 		  base = XEXP (XEXP (addr, 0), 0);
 		  if (debug_print)
 		    {
@@ -1744,11 +1738,10 @@ amo_prepare_push_pop_string (int push_or_pop)
 	  else
 	    {
 	      /* Check especially if adding 2 does not cross the MAX_COUNT.  */
-	      if ((word_cnt + ((i < AMO_FIRST_DWORD_REGISTER) ? 1 : 2))
-		  >= MAX_COUNT)
-		break;
+	      if ((word_cnt + 1) >= MAX_COUNT)
+          break;
 	      /* Increase word count by 2 for long registers except RA.   */
-	      word_cnt += ((i < AMO_FIRST_DWORD_REGISTER) ? 1 : 2);
+	      word_cnt += 1;
 	    }
 	  ++i;
 	}
@@ -1833,7 +1826,6 @@ amo_create_dwarf_for_multi_push (rtx insn)
 {
   rtx dwarf, reg, tmp;
   int i, j, from, to, word_cnt, dwarf_par_index, inc;
-  machine_mode mode;
   int num_regs = 0, offset = 0, split_here = 0, total_push_bytes = 0;
 
   for (i = 0; i <= current_frame_info.last_reg_to_save; ++i)
@@ -1841,9 +1833,6 @@ amo_create_dwarf_for_multi_push (rtx insn)
       if (current_frame_info.save_regs[i])
 	{
 	  ++num_regs;
-	  if (i < AMO_FIRST_DWORD_REGISTER)
-	    total_push_bytes += 2;
-	  else
 	    total_push_bytes += 4;
 	}
     }
@@ -1868,23 +1857,9 @@ amo_create_dwarf_for_multi_push (rtx insn)
 
 	  for (j = to; j >= from; --j)
 	    {
-	      if (j < AMO_FIRST_DWORD_REGISTER)
-		{
-		  mode = HImode;
-		  inc = 1;
-		}
-	      else
-		{
-		  mode = SImode;
-		  inc = 2;
-		}
-	      reg = gen_rtx_REG (mode, j);
-	      offset += 2 * inc;
-	      tmp = gen_rtx_SET (gen_frame_mem (mode,
-						plus_constant
-						(Pmode, stack_pointer_rtx,
-						 total_push_bytes - offset)),
-				 reg);
+	      reg = gen_rtx_REG (SImode, j);
+	      offset += 4;
+	      tmp = gen_rtx_SET (gen_frame_mem (SImode, plus_constant (Pmode, stack_pointer_rtx, total_push_bytes - offset)), reg);
 	      RTX_FRAME_RELATED_P (tmp) = 1;
 	      XVECEXP (dwarf, 0, dwarf_par_index--) = tmp;
 	    }
@@ -1897,7 +1872,7 @@ amo_create_dwarf_for_multi_push (rtx insn)
 
       if (i != RETURN_ADDRESS_REGNUM)
 	{
-	  inc = (i < AMO_FIRST_DWORD_REGISTER) ? 1 : 2;
+	  inc = 2;
 	  if (word_cnt + inc >= MAX_COUNT || FRAME_POINTER_REGNUM == i)
 	    {
 	      split_here = 1;
@@ -1910,9 +1885,7 @@ amo_create_dwarf_for_multi_push (rtx insn)
       from = i--;
     }
 
-  tmp = gen_rtx_SET (stack_pointer_rtx,
-		     gen_rtx_PLUS (SImode, stack_pointer_rtx,
-				   GEN_INT (-offset)));
+  tmp = gen_rtx_SET (stack_pointer_rtx, gen_rtx_PLUS (SImode, stack_pointer_rtx, GEN_INT (-offset)));
   RTX_FRAME_RELATED_P (tmp) = 1;
   XVECEXP (dwarf, 0, 0) = tmp;
 

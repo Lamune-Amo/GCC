@@ -20,8 +20,8 @@
 
 ;;  Register numbers
 (define_constants
-  [(SP_REGNUM 15); Stack pointer
-   (RA_REGNUM 14); Return address
+  [(SP_REGNUM 30); Stack pointer
+   (RA_REGNUM 31); Return address
   ]
 )
 

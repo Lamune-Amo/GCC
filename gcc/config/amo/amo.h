@@ -51,7 +51,7 @@ do                                              \
 #define UNITS_PER_WORD      4
 
 /* Units per 32-bit (DWORD).  */
-#define AMO_UNITS_PER_DWORD 64 // not for precompile
+#define AMO_UNITS_PER_DWORD 4 // not for precompile
 
 #define POINTER_SIZE        32
 
@@ -129,7 +129,7 @@ do                                              \
 /* Register usage.  */
 
 /* First 32-bit register is R12.  */
-#define AMO_FIRST_DWORD_REGISTER   12 // TODO
+//#define AMO_FIRST_DWORD_REGISTER   12 // TODO
 
 #define FIRST_PSEUDO_REGISTER      32
 
@@ -274,7 +274,7 @@ enum reg_class
 /* TODO */
 /* The maximum number of consecutive registers of class CLASS needed to
    hold a value of mode MODE.
-   On the CompactRISC architecture, the size of MODE in words.
+   On the CompactRISC architecture, the size of MODE in4ords.
    The size of MODE in double words for the class LONG_REGS.
 
    The following check assumes if the class is not LONG_REGS, then
@@ -448,18 +448,6 @@ struct cumulative_args
 #undef ASM_OUTPUT_LABELREF
 #define ASM_OUTPUT_LABELREF(STREAM, NAME) \
   asm_fprintf (STREAM, "%U%s", (*targetm.strip_name_encoding) (NAME))
-
-#define ASM_OUTPUT_SYMBOL_REF(STREAM, SYMBOL)   \
-  do                                            \
-    {                                           \
-      const char *rn = XSTR (SYMBOL, 0);        \
-      assemble_name (STREAM, rn);               \
-      if (SYMBOL_REF_FUNCTION_P (SYMBOL))       \
-      {                                         \
-        fprintf ((STREAM), "@c");               \
-      }                                         \
-    }                                           \
-  while (0)
 
 #undef ASM_APP_ON
 #define ASM_APP_ON   "#APP\n"
