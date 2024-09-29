@@ -55,10 +55,17 @@
   (and (match_code "const_int")
        (match_test "(IN_RANGE_P (ival, 0, 15) && ((ival != 9) && (ival != 11)))")))
 
+;; used for add/sub
 (define_constraint "N"
   "A signed 16-bit immediate."
   (and (match_code "const_int")
        (match_test "IN_RANGE_P (ival, -32768, 32767)")))
+
+;; used for add/sub
+(define_constraint "P"
+  "A unsigned 16-bit immediate."
+  (and (match_code "const_int")
+       (match_test "IN_RANGE_P (ival, 0, 65535)")))
 
 (define_constraint "O"
   "A unsigned 20-bit immediate."

@@ -2131,48 +2131,6 @@ amo_unwind_word_mode (void)
 }
 
 
-/* Helper function for md file. This function is used to emit logical 
-   DI instructions. The argument "num" decides which instruction to be
-   printed.  */
-const char *
-amo_emit_logical_di (rtx *operands, enum rtx_code code)
-{
-  rtx lo_op[2] ;
-  rtx hi_op[2] ;
-
-  lo_op[0] = gen_lowpart (SImode, operands[0]);
-  hi_op[0] = simplify_gen_subreg (SImode, operands[0], DImode, 4);
-
-  lo_op[1] = gen_lowpart (SImode, operands[2]);
-  hi_op[1] = simplify_gen_subreg (SImode, operands[2], DImode, 4);
-
-  switch (code)
-  {
-    case AND:
-      {
-	output_asm_insn ("andd\t%1, %0", lo_op) ;
-	output_asm_insn ("andd\t%1, %0", hi_op) ;
-	return "";
-      }
-    case IOR:
-      {
-	output_asm_insn ("ord\t%1, %0", lo_op) ;
-	output_asm_insn ("ord\t%1, %0", hi_op) ;
-	return "";
-      }
-    case XOR:
-      {
-	output_asm_insn ("xord\t%1, %0", lo_op) ;
-	output_asm_insn ("xord\t%1, %0", hi_op) ;
-	return "";
-      }
-    default:
-      break;
-  }
-
-  return "";
-}
-
 /* Implement PUSH_ROUNDING.  */
 
 poly_int64

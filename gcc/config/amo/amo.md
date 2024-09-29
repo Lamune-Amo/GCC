@@ -69,10 +69,9 @@
 (define_mode_attr tpush [(QI "1") (HI "1") (SI "2") (SF "2") (DI "4") (DF "4")])
 
 ;;  Code Macro Definitions
-(define_code_attr  sIsa    [(sign_extend "")  (zero_extend "u")])
-(define_code_attr  sPat    [(sign_extend "s") (zero_extend "u")])
 (define_code_attr  szPat   [(sign_extend "")  (zero_extend "zero_")])
-(define_code_attr  szIsa   [(sign_extend "x") (zero_extend "z")])
+(define_code_attr  szIsa   [(sign_extend "$3") (zero_extend "$2")])
+(define_code_attr  szIua   [(sign_extend "$1") (zero_extend "$0")])
 
 (define_code_iterator sz_xtnd    [ sign_extend       zero_extend])
 (define_code_iterator any_cond   [eq ne gt gtu lt ltu ge geu le leu])
@@ -85,7 +84,6 @@
 (define_code_iterator any_logic  [and ior xor])
 (define_code_attr logic 	 [(and "and") (ior "or") (xor "xor")])
 (define_code_attr any_logic_insn [(and "and") (ior "ior") (xor "xor")])
-(define_code_attr any_logic_flag [(and "AND") (ior "IOR") (xor "XOR")])
 
 (define_mode_iterator QH 	 [QI HI])
 (define_mode_attr qh 		 [(QI "qi") (HI "hi")])
@@ -151,163 +149,28 @@
 	(plus:SI (match_operand:SI 1 "register_operand" "r,r")
 		 (match_operand:SI 2 "reg_si_int_operand" "r,N")))]
   ""
-  "@
-	 add %0, %1, %2
-	 add %0, %1, $%2"
+	"add\t%0, %1, %2"
   [(set_attr "length" "4,4")]
 )
 
 ;;  Subtract Instruction
 (define_insn "subsi3"
-  [(set (match_operand:SI 0 "register_operand" "=r,r")
-	(minus:SI (match_operand:SI 1 "register_operand" "0,0")
-		  (match_operand:SI 2 "reg_si_int_operand" "r,i")))]
-  ""
-  "subd\t%2, %0"
-  [(set_attr "length" "4,6")]
+	[(set (match_operand:SI 0 "register_operand" "=r,r")
+		  (minus:SI (match_operand:SI 1 "register_operand" "r,r")
+				   (match_operand:SI 2 "nonmemory_operand" "r,N")))]
+	""
+	"sub %0, %1, %2"
+  [(set_attr "length" "4,4")]
 )
-
-;;  Multiply and Accumulate Instructions "smachisi3/umachisi3"
-(define_insn "<sPat>maddhisi4"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(plus:SI
-	(mult:SI (sz_xtnd:SI (match_operand:HI 1 "register_operand" "r"))
-		 (sz_xtnd:SI (match_operand:HI 2 "register_operand" "r")))
-	(match_operand:SI 3 "register_operand" "0")))]
-  "TARGET_MAC"
-  "mac<sPat>w\t%1, %2, %0"
-  [(set_attr "length" "2")]
-)
-
-;;  Multiply Instructions
-(define_insn "mulhi3"
-  [(set (match_operand:HI 0 "register_operand" "=c,c,c")
-	(mult:HI (match_operand:HI 1 "register_operand" "%0,0,0")
-		 (match_operand:HI 2 "reg_or_int_operand" "c,M,N")))]
-  ""
-  "mulw\t%2, %0"
-  [(set_attr "length" "2,2,4")]
-)
-
-(define_insn "mulqihi3"
-  [(set (match_operand:HI 0 "register_operand" "=c")
-	(mult:HI (sign_extend:HI (match_operand:QI 1 "register_operand" "%0"))
-		 (sign_extend:HI (match_operand:QI 2 "register_operand" "c"))))]
-  ""
-  "mulsb\t%2, %0"
-  [(set_attr "length" "2")]
-)
-
-;;  Bit Set/Clear Instructions
-(define_expand "insv"
-  [(set (zero_extract (match_operand 0 "memory_operand" "")
-		      (match_operand 1 "immediate_operand" "")
-		      (match_operand 2 "immediate_operand" ""))
-	(match_operand 3 "immediate_operand" ""))]
-  "TARGET_BIT_OPS"
-  {
-    if (INTVAL (operands[1]) != 1)
-      FAIL;
-    if (INTVAL (operands[2]) < 0 || INTVAL (operands[2]) > 15)
-      FAIL;
-    if (INTVAL (operands[3]) == 1)
-      {
-	if (GET_MODE (operands[0]) == QImode)
-	  {
-	    emit_insn (gen_set_bitqi (operands[0], operands[2]));
-	    DONE;
-	  }
-	else if (GET_MODE (operands[0]) == HImode)
-	  {
-	    emit_insn (gen_set_bithi (operands[0], operands[2]));
-	    DONE;
-	  }
-      }
-    if (INTVAL (operands[3]) == 0)
-      {
-	if (GET_MODE (operands[0]) == QImode)
-	  {
-	    emit_insn (gen_clr_bitqi (operands[0], operands[2]));
-	    DONE;
-	  }
-	else if (GET_MODE (operands[0]) == HImode)
-	  {
-	    emit_insn (gen_clr_bithi (operands[0], operands[2]));
-	    DONE;
-	  }
-      }
-  }
-)
-
-(define_insn "set_bit<mode>"
-  [(set (zero_extract:SHORT (match_operand:SHORT 0 "memory_operand" "+m")
-			    (const_int 1)
-			    (match_operand 1 "immediate_operand" "i"))
-	(const_int 1))]
-  "TARGET_BIT_OPS"
-  "sbit<tIsa>\t%1,%0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "clr_bit<mode>"
-  [(set (zero_extract:SHORT (match_operand:SHORT 0 "memory_operand" "+m")
-			    (const_int 1)
-			    (match_operand 1 "immediate_operand" "i"))
-	(const_int 0))]
-  "TARGET_BIT_OPS"
-  "cbit<tIsa>\t%1,%0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "set_bit<mode>_mem"
-  [(set (match_operand:SHORT 0 "bit_operand" "=m")
-	(ior:SHORT (match_dup 0)
-		   (match_operand:SHORT 1 "one_bit_operand" "i"))
-  )]
-  "TARGET_BIT_OPS"
-  "sbit<tIsa>\t$%s1,%0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "clear_bit<mode>_mem"
-  [(set (match_operand:SHORT 0 "bit_operand" "=m")
-	(and:SHORT (match_dup 0)
-		   (match_operand:SHORT 1 "rev_one_bit_operand" "i"))
-  )]
-  "TARGET_BIT_OPS"
-  "cbit<tIsa>\t$%r1,%0"
-  [(set_attr "length" "2")]
-)
-
-;;  Logical Instructions - and/ior/xor "anddi3/iordi3/xordi3"
-(define_insn "<any_logic_insn>di3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(any_logic:DI (match_operand:DI 1 "register_operand" "%0")
-		      (match_operand:DI 2 "register_operand" "r")))]
-  ""
-  {
-    return amo_emit_logical_di (operands, <any_logic_flag>);
-  })
 
 ; Logical and/ior/xor "andsi3/iorsi3/xorsi3"
 (define_insn "<any_logic_insn>si3"
-  [(set (match_operand:SI 0 "register_operand" "=r,r,r,r")
-	(any_logic:SI (match_operand:SI 1 "register_operand" "%0,0,0,0")
-		      (match_operand:SI 2 "reg_si_int_operand" "r,M,N,i")))]
+  [(set (match_operand:SI 0 "register_operand" "=r,r")
+	(any_logic:SI (match_operand:SI 1 "register_operand" "r,r")
+		      (match_operand:SI 2 "reg_si_int_operand" "r,P")))]
   ""
-  "<logic>d\t%2, %0"
-  [(set_attr "length" "2,2,4,6")]
-)
-
-; Logical and/ior/xor in HImode "andhi3/iorhi3/xorhi3"
-; Logical and/ior/xor in QImode "andqi3/iorqi3/xorqi3"
-(define_insn "<any_logic_insn><qh>3"
-  [(set (match_operand:QH 0 "register_operand" "=c,c,c")
-	(any_logic:QH (match_operand:QH 1 "register_operand" "%0,0,0")
-		      (match_operand:QH 2 "reg_hi_int_operand" "c,M,N")))]
-  ""
-  "<logic><QHsuffix>\t%2, %0"
-  [(set_attr "length" "<QHsz>")]
+  "<logic>\t%0, %1, %2"
+  [(set_attr "length" "4,4")]
 )
 
 ;;  Sign and Zero Extend Instructions
@@ -315,17 +178,21 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(sz_xtnd:SI (match_operand:HI 1 "register_operand" "r")))]
   ""
-  "mov<szIsa>w\t%1, %0"
+  "ext\t%0, %1, <szIsa>"
   [(set_attr "length" "4")]
 )
 
-(define_insn "<szPat>extendqihi2"
-  [(set (match_operand:HI 0 "register_operand" "=r")
-	(sz_xtnd:HI (match_operand:QI 1 "register_operand" "r")))]
+(define_insn "<szPat>extendqisi2"
+  [(set (match_operand:SI 0 "register_operand" "=r")
+	(sz_xtnd:SI (match_operand:QI 1 "register_operand" "r")))]
   ""
-  "mov<szIsa>b\t%1, %0"
+  "ext\t%0, %1, <szIua>"
   [(set_attr "length" "4")]
 )
+
+
+
+
 
 ;;  One's Complement
 (define_insn "one_cmpldi2"
