@@ -2033,7 +2033,7 @@ amo_expand_epilogue (void)
       RTX_FRAME_RELATED_P (insn) = 1;
     }
 
-  printf ("-- epilogue -------------------------------------------------");
+  printf ("-- epilogue -------------------------------------------------\n");
   printf ("local var size: %d\n", current_frame_info.var_size);
   printf ("reg saved size: %d\n", current_frame_info.reg_size);
   printf ("regs: ");
@@ -2128,47 +2128,6 @@ static scalar_int_mode
 amo_unwind_word_mode (void)
 {
   return SImode;
-}
-
-/* Helper function for md file. This function is used to emit arithmetic 
-   DI instructions. The argument "num" decides which instruction to be
-   printed.  */
-const char *
-amo_emit_add_sub_di (rtx *operands, enum rtx_code code)
-{
-  rtx lo_op[2] ;
-  rtx hi0_op[2] ;
-  rtx hi1_op[2] ;
-
-  lo_op[0] = gen_lowpart (SImode, operands[0]);
-  hi0_op[0] = simplify_gen_subreg (HImode, operands[0], DImode, 4);
-  hi1_op[0] = simplify_gen_subreg (HImode, operands[0], DImode, 6);
-
-  lo_op[1] = gen_lowpart (SImode, operands[2]);
-  hi0_op[1] = simplify_gen_subreg (HImode, operands[2], DImode, 4);
-  hi1_op[1] = simplify_gen_subreg (HImode, operands[2], DImode, 6);
-
-  switch (code)
-  {
-    case PLUS:
-      {
-	output_asm_insn ("addd\t%1, %0", lo_op) ;
-	output_asm_insn ("addcw\t%1, %0", hi0_op) ;
-	output_asm_insn ("addcw\t%1, %0", hi1_op) ;
-	break;
-      }
-    case MINUS:
-      {
-	output_asm_insn ("subd\t%1, %0", lo_op) ;
-	output_asm_insn ("subcw\t%1, %0", hi0_op) ;
-	output_asm_insn ("subcw\t%1, %0", hi1_op) ;
-	break;
-      }
-   default:
-     break;
-  }
-
-  return "";
 }
 
 

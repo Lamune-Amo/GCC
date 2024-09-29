@@ -86,7 +86,6 @@ extern int amo_initial_elimination_offset (int, int);
 extern char *amo_prepare_push_pop_string (int);
 extern void amo_expand_prologue (void);
 extern void amo_expand_epilogue (void);
-extern const char *amo_emit_add_sub_di (rtx *, enum rtx_code);
 extern const char *amo_emit_logical_di (rtx *, enum rtx_code);
 
 #endif /* RTX_CODE.  */

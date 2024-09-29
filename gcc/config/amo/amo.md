@@ -146,43 +146,15 @@
 
 ;; Arithmetic Instruction  Patterns
 
-;; Addition-Subtraction "adddi3/subdi3" insns.
-(define_insn "<plusminus_insn>di3"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(plusminus:DI (match_operand:DI 1 "register_operand" "<comm>0")
-		      (match_operand:DI 2 "register_operand" "r")))]
-  ""
-  {
-    return amo_emit_add_sub_di (operands, <plusminus_flag>);
-  })
-
 (define_insn "addsi3"
-  [(set (match_operand:SI 0 "register_operand" "=r,r,r,r,r")
-	(plus:SI (match_operand:SI 1 "register_operand" "%0,0,0,0,0")
-		 (match_operand:SI 2 "reg_si_int_operand" "r,M,N,O,i")))]
+  [(set (match_operand:SI 0 "register_operand" "=r,r")
+	(plus:SI (match_operand:SI 1 "register_operand" "r,r")
+		 (match_operand:SI 2 "reg_si_int_operand" "r,N")))]
   ""
-  "addd\t%2, %0"
-  [(set_attr "length" "2,2,4,4,6")]
-)
-
-;; Addition-Subtraction "addhi3/subhi3" insns.
-(define_insn "<plusminus_insn>hi3"
-  [(set (match_operand:HI 0 "register_operand" "=c,c,c")
-	(plusminus:HI (match_operand:HI 1 "register_operand" "<comm>0,0,0")
-		      (match_operand:HI 2 "reg_hi_int_operand" "c,M,N")))]
-  ""
-  "<plusminus_insn>w\t%2, %0"
-  [(set_attr "length" "2,2,4")]
-)
-
-;; Addition-Subtraction "addqi3/subqi3" insns.
-(define_insn "<plusminus_insn>qi3"
-  [(set (match_operand:QI 0 "register_operand" "=c,c")
-	(plusminus:QI (match_operand:QI 1 "register_operand" "<comm>0,0")
-		      (match_operand:QI 2 "reg_qi_int_operand" "c,M")))]
-  ""
-  "<plusminus_insn>b\t%2, %0"
-  [(set_attr "length" "2,2")]
+  "@
+	 add %0, %1, %2
+	 add %0, %1, $%2"
+  [(set_attr "length" "4,4")]
 )
 
 ;;  Subtract Instruction

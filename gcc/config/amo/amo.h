@@ -458,14 +458,6 @@ struct cumulative_args
 /* Switch into a generic section.  */
 #define TARGET_ASM_NAMED_SECTION	default_elf_asm_named_section
 
-/* TODO */
-#undef INIT_SECTION_ASM_OP
-#define INIT_SECTION_ASM_OP		"\t.section\t.init"
-
-#undef FINI_SECTION_ASM_OP
-#define FINI_SECTION_ASM_OP		"\t.section\t.fini"
-/* TODO_END */
-
 /* Instruction output.  */
 #define REGISTER_NAMES                                                         \
   {                                                                              \
