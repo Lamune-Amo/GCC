@@ -61,7 +61,7 @@
   (and (match_code "const_int")
        (match_test "IN_RANGE_P (ival, -32768, 32767)")))
 
-;; used for add/sub
+;; used for logic
 (define_constraint "P"
   "A unsigned 16-bit immediate."
   (and (match_code "const_int")
@@ -82,6 +82,7 @@
   (and (match_code "const_int")
        (match_test "IN_RANGE_P (ival, 0, 15)")))
 
+;; used for shift
 (define_constraint "S"
   "A shift SI immediate."
   (and (match_code "const_int")

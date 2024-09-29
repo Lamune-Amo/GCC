@@ -149,7 +149,7 @@
 	(plus:SI (match_operand:SI 1 "register_operand" "r,r")
 		 (match_operand:SI 2 "reg_si_int_operand" "r,N")))]
   ""
-	"add\t%0, %1, %2"
+	"add\t\t%0, %1, %2"
   [(set_attr "length" "2,2")]
 )
 
@@ -159,7 +159,7 @@
 		  (minus:SI (match_operand:SI 1 "register_operand" "r,r")
 				   (match_operand:SI 2 "nonmemory_operand" "r,N")))]
 	""
-	"sub\t%0, %1, %2"
+	"sub\t\t%0, %1, %2"
   [(set_attr "length" "2,2")]
 )
 
@@ -169,7 +169,7 @@
 	(any_logic:SI (match_operand:SI 1 "register_operand" "r,r")
 		      (match_operand:SI 2 "reg_si_int_operand" "r,P")))]
   ""
-  "<logic>\t%0, %1, %2"
+  "<logic>\t\t%0, %1, %2"
   [(set_attr "length" "2,2")]
 )
 
@@ -178,7 +178,7 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(sz_xtnd:SI (match_operand:HI 1 "register_operand" "r")))]
   ""
-  "ext\t%0, %1, <szIsa>"
+  "ext\t\t%0, %1, <szIsa>"
   [(set_attr "length" "2")]
 )
 
@@ -186,208 +186,43 @@
   [(set (match_operand:SI 0 "register_operand" "=r")
 	(sz_xtnd:SI (match_operand:QI 1 "register_operand" "r")))]
   ""
-  "ext\t%0, %1, <szIua>"
+  "ext\t\t%0, %1, <szIua>"
   [(set_attr "length" "2")]
 )
-
-
-
-
 
 ;;  One's Complement
-(define_insn "one_cmpldi2"
-  [(set (match_operand:DI 0 "register_operand" "=r")
-	(not:DI (match_operand:DI 1 "register_operand" "0")))]
+(define_insn "one_cmplsi2"
+  [(set (match_operand:SI 0 "register_operand" "=r,r")
+	(not:SI (match_operand:SI 1 "register_operand" "r,P")))]
   ""
-  {
-    rtx xoperand ;
-    int reg0 = REGNO (operands[0]);
-
-    xoperand = gen_rtx_REG (SImode, reg0 + 2);
-    output_asm_insn ("xord\t$-1, %0", operands);
-    output_asm_insn ("xord\t$-1, %0", &xoperand);
-    return "" ;
-  }
-  [(set_attr "length" "12")]
-)
-
-(define_insn "one_cmpl<mode>2"
-  [(set (match_operand:AMOIM 0 "register_operand" "=r")
-	(not:AMOIM (match_operand:AMOIM 1 "register_operand" "0")))]
-  ""
-  "xor<tIsa>\t$-1, %0"
+  "not\t\t%0, %1"
   [(set_attr "length" "2")]
-)
-
-;;  Arithmetic Left and Right Shift Instructions
-(define_insn "ashlqi3"
-  [(set (match_operand:QI 0 "register_operand" "=c,c")
-	(ashift:QI (match_operand:QI 1 "register_operand" "0,0")
-		   (match_operand:QI 2 "nonmemory_operand" "c,I")))]
-  ""
-  "ashub\t%2, %0"
-  [(set_attr "length" "2,2")]
-)
-
-(define_insn "ashlhi3"
-  [(set (match_operand:HI 0 "register_operand" "=c,c")
-	(ashift:HI (match_operand:HI 1 "register_operand" "0,0")
-		   (match_operand:QI 2 "nonmemory_operand" "c,J")))]
-  ""
-  "ashuw\t%2, %0"
-  [(set_attr "length" "2,2")]
 )
 
 (define_insn "ashlsi3"
-  [(set (match_operand:SI 0 "register_operand" "=r,r")
-	(ashift:SI (match_operand:SI 1 "register_operand" "0,0")
-		   (match_operand:QI 2 "nonmemory_operand" "r,K")))]
-  ""
-  "ashud\t%2, %0"
-  [(set_attr "length" "2,2")]
-)
-
-(define_expand "ashr<mode>3"
-  [(set (match_operand:AMOIM 0 "register_operand" "")
-	(ashiftrt:AMOIM (match_operand:AMOIM 1 "register_operand" "")
-			 (match_operand:QI 2 "nonmemory_operand" "")))]
-  ""
-  {
-    if (GET_CODE (operands[2]) == CONST_INT)
-      {
-	/* If the constant is not in range, try placing it in a reg */
-	if (!UNSIGNED_INT_FITS_N_BITS(INTVAL (operands[2]),<shImmBits>))
-	operands[2] = copy_to_mode_reg(QImode, operands[2]);
-      }
-
-    if (GET_CODE (operands[2]) != CONST_INT)
-      operands[2] = gen_rtx_NEG (QImode, negate_rtx (QImode, operands[2]));
-  }
-)
-
-(define_insn "ashrqi3_imm_insn"
-  [(set (match_operand:QI 0 "register_operand" "=c")
-	(ashiftrt:QI (match_operand:QI 1 "register_operand" "0")
-		     (match_operand:QI 2 "shift_qi_imm_operand" "i")))]
-  ""
-  "ashub\t$%n2, %0"
+	[(set (match_operand:SI 0 "register_operand" "=r,r")
+		  (ashift:SI (match_operand:SI 1 "register_operand" "r,r")
+				   (match_operand:QI 2 "nonmemory_operand" "r,S")))]
+	""
+	"lsl\t\t%0, %1, %2"
   [(set_attr "length" "2")]
 )
 
-(define_insn "ashrhi3_imm_insn"
-  [(set (match_operand:HI 0 "register_operand" "=c")
-	(ashiftrt:HI (match_operand:HI 1 "register_operand" "0")
-		     (match_operand:QI 2 "shift_hi_imm_operand" "i")))]
-  ""
-  "ashuw\t$%n2, %0"
+(define_insn "lshrsi3"
+	[(set (match_operand:SI 0 "register_operand" "=r,r")
+		  (lshiftrt:SI (match_operand:SI 1 "register_operand" "r,r")
+				   (match_operand:QI 2 "nonmemory_operand" "r,S")))]
+	""
+	"lsr\t\t%0, %1, %2"
   [(set_attr "length" "2")]
 )
 
-(define_insn "ashrsi3_imm_insn"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(ashiftrt:SI (match_operand:SI 1 "register_operand" "0")
-		     (match_operand:QI 2 "shift_si_imm_operand" "i")))]
-  ""
-  "ashud\t$%n2, %0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "ashrqi3_neg_insn"
-  [(set (match_operand:QI 0 "register_operand" "=c")
-	(ashiftrt:QI (match_operand:QI 1 "register_operand" "0")
-		     (neg:QI (match_operand:QI 2 "register_operand" "c"))))]
-  ""
-  "ashub\t%2,%0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "ashrhi3_neg_insn"
-  [(set (match_operand:HI 0 "register_operand" "=c")
-	(ashiftrt:HI (match_operand:HI 1 "register_operand" "0")
-		     (neg:QI (match_operand:QI 2 "register_operand" "c"))))]
-  ""
-  "ashuw\t%2,%0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "ashrdi3_neg_insn"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(ashiftrt:SI (match_operand:SI 1 "register_operand" "0")
-		     (neg:QI (match_operand:QI 2 "register_operand" "r"))))]
-  ""
-  "ashud\t%2,%0"
-  [(set_attr "length" "2")]
-)
-
-(define_expand "lshr<mode>3"
-  [(set (match_operand:AMOIM 0 "register_operand" "")
-	(lshiftrt:AMOIM (match_operand:AMOIM 1 "register_operand" "")
-			 (match_operand:QI 2 "reg_or_int_operand" "")))]
-  ""
-  {
-    if (GET_CODE (operands[2]) == CONST_INT)
-      {
-	/* If the constant is not in range, try placing it in a reg */
-	if (!UNSIGNED_INT_FITS_N_BITS(INTVAL (operands[2]),<shImmBits>))
-	operands[2] = copy_to_mode_reg(QImode, operands[2]);
-      }
-
-	if (GET_CODE (operands[2]) != CONST_INT)
-	operands[2] = gen_rtx_NEG (QImode, negate_rtx (QImode, operands[2]));
-   }
-)
-
-(define_insn "lshrqi3_imm_insn"
-  [(set (match_operand:QI 0 "register_operand" "=c")
-	(lshiftrt:QI (match_operand:QI 1 "register_operand" "0")
-		     (match_operand:QI 2 "shift_qi_operand" "Q")))]
-  ""
-  "lshb\t$%n2, %0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "lshrhi3_imm_insn"
-  [(set (match_operand:HI 0 "register_operand" "=c")
-	(lshiftrt:HI (match_operand:HI 1 "register_operand" "0")
-		     (match_operand:QI 2 "shift_hi_operand" "R")))]
-  ""
-  "lshw\t$%n2, %0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "lshrsi3_imm_insn"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(lshiftrt:SI (match_operand:SI 1 "register_operand" "0")
-		     (match_operand:QI 2 "shift_si_operand" "S")))]
-  ""
-  "lshd\t$%n2, %0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "lshrqi3_neg_insn"
-  [(set (match_operand:QI 0 "register_operand" "=c")
-	(lshiftrt:QI (match_operand:QI 1 "register_operand" "0")
-		     (neg:QI (match_operand:QI 2 "register_operand" "c"))))]
-  ""
-  "lshb\t%2,%0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "lshrhi3_neg_insn"
-  [(set (match_operand:HI 0 "register_operand" "=c")
-	(lshiftrt:HI (match_operand:HI 1 "register_operand" "0")
-		     (neg:QI (match_operand:QI 2 "register_operand" "c"))))]
-  ""
-  "lshw\t%2,%0"
-  [(set_attr "length" "2")]
-)
-
-(define_insn "lshrsi3_neg_insn"
-  [(set (match_operand:SI 0 "register_operand" "=r")
-	(lshiftrt:SI (match_operand:SI 1 "register_operand" "0")
-		     (neg:QI (match_operand:QI 2 "register_operand" "r"))))]
-  ""
-  "lshd\t%2,%0"
+(define_insn "ashrsi3"
+	[(set (match_operand:SI 0 "register_operand" "=r,r")
+		  (ashiftrt:SI (match_operand:SI 1 "register_operand" "r,r")
+				   (match_operand:QI 2 "nonmemory_operand" "r,S")))]
+	""
+	"asr\t\t%0, %1, %2"
   [(set_attr "length" "2")]
 )
 
