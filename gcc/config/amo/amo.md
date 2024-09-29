@@ -150,7 +150,7 @@
 		 (match_operand:SI 2 "reg_si_int_operand" "r,N")))]
   ""
 	"add\t%0, %1, %2"
-  [(set_attr "length" "4,4")]
+  [(set_attr "length" "2,2")]
 )
 
 ;;  Subtract Instruction
@@ -159,8 +159,8 @@
 		  (minus:SI (match_operand:SI 1 "register_operand" "r,r")
 				   (match_operand:SI 2 "nonmemory_operand" "r,N")))]
 	""
-	"sub %0, %1, %2"
-  [(set_attr "length" "4,4")]
+	"sub\t%0, %1, %2"
+  [(set_attr "length" "2,2")]
 )
 
 ; Logical and/ior/xor "andsi3/iorsi3/xorsi3"
@@ -170,7 +170,7 @@
 		      (match_operand:SI 2 "reg_si_int_operand" "r,P")))]
   ""
   "<logic>\t%0, %1, %2"
-  [(set_attr "length" "4,4")]
+  [(set_attr "length" "2,2")]
 )
 
 ;;  Sign and Zero Extend Instructions
@@ -179,7 +179,7 @@
 	(sz_xtnd:SI (match_operand:HI 1 "register_operand" "r")))]
   ""
   "ext\t%0, %1, <szIsa>"
-  [(set_attr "length" "4")]
+  [(set_attr "length" "2")]
 )
 
 (define_insn "<szPat>extendqisi2"
@@ -187,7 +187,7 @@
 	(sz_xtnd:SI (match_operand:QI 1 "register_operand" "r")))]
   ""
   "ext\t%0, %1, <szIua>"
-  [(set_attr "length" "4")]
+  [(set_attr "length" "2")]
 )
 
 
