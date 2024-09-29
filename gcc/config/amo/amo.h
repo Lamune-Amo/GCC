@@ -236,7 +236,7 @@ enum reg_class
     {0x00000000}, /* NO_REGS		             */  	\
     {0x00000000}, /* SHORT_REGS 	: x    */   	\
     {0xFFFFFFFF}, /* LONG_REGS 		: 0 - 31    */  	\
-    {0x1FFFFFFF}, /* NOSP_REGS 		: 0 - 28     */   	\
+    {0xBFFFFFFF}, /* NOSP_REGS 		: 0 - 29, 31     */   	\
     {0x00000000}, /* DOUBLE_BASE_REGS   : x */  	\
     {0xFFFFFFFF}, /* GENERAL_REGS	: 0 - 31     */  	\
     {0xFFFFFFFF}  /* ALL_REGS 		: 0 - 31     */  	\

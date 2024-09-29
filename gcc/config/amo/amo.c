@@ -318,7 +318,7 @@ amo_conditional_register_usage (void)
 {
   if (flag_pic)
     {
-      fixed_regs[12] = call_used_regs[12] = 1;
+      fixed_regs[28] = call_used_regs[28] = 1;
     }
 }
 
