@@ -296,9 +296,9 @@
 
 	  /* If operand-1 is a symbol, convert it into a BRO or GOT Format.  */
 	  if (flag_pic && ! legitimate_pic_operand_p (operands[1]))
-	    {
-	      operands[1] = legitimize_pic_address (operands[1], <MODE>mode, 0);
-	    }
+    {
+      operands[1] = legitimize_pic_address (operands[1], <MODE>mode, 0);
+    }
       }
   }
 )
@@ -312,13 +312,13 @@
 ;                QI,HI : 1
 ;                SI,SF : 2
 ;                DI,DF : 4
-(define_insn "push<mode>_internal"
-  [(set (match_operand:ALLMTD 0 "push_operand" "=<pushCnstr>")
-	(match_operand:ALLMTD 1 "nosp_reg_operand" "b"))]
-  ""
-  "push\t$<tpush>,%p1"
-  [(set_attr "length" "2")]
-)
+;(define_insn "push<mode>_internal"
+;  [(set (match_operand:ALLMTD 0 "push_operand" "=<pushCnstr>")
+;	(match_operand:ALLMTD 1 "nosp_reg_operand" "b"))]
+;  ""
+;  "push\t$<tpush>,%p1"
+;  [(set_attr "length" "2")]
+;)
 
 ; (DI, DF) move
 (define_insn "*mov<mode>_double"
