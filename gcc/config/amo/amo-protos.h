@@ -92,6 +92,5 @@ extern void amo_expand_epilogue (void);
 /* Handling the "interrupt" attribute.  */
 extern int amo_interrupt_function_p (void);
 extern bool amo_is_data_model (enum data_model_type);
-extern poly_int64 amo_push_rounding (poly_int64);
 
 #endif /* Not GCC_AMO_PROTOS_H.  */ 

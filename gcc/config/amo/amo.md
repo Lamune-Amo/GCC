@@ -51,9 +51,8 @@
 (define_mode_iterator AMOIM [QI HI SI])
 (define_mode_iterator LONG   [SI SF])
 (define_mode_iterator ALLMTD [QI HI SI SF DI DF])
-(define_mode_iterator DOUBLE [DI DF])
 (define_mode_iterator SHORT  [QI HI])
-(define_mode_attr tIsa       [(QI "b") (HI "w") (SI "d") (SF "d")])
+(define_mode_attr tIsa       [(QI "b") (HI "h") (SI "") (SF "")])
 (define_mode_attr lImmArith  [(QI "4") (HI "4") (SI "6") (SF "6")])
 (define_mode_attr lImmArithD [(QI "4") (HI "4") (SI "6") (SF "6") (DI "12") (DF "12")])
 (define_mode_attr iF         [(QI "i") (HI "i") (SI "i") (SF "F")])
@@ -275,28 +274,12 @@
 		if (!nosp_reg_operand (operands[1], <MODE>mode))
 		  operands[1] = copy_to_mode_reg (<MODE>mode, operands[1]);
 	      }
-	    else
-	      {
-		/* Use copy_to_mode_reg if op1 is not register operand
-		   subject to conditions inside.  */
-		if (!register_operand (operands[1], <MODE>mode))
-		  {
-		    /* AMO does not support moving immediate to SI or SF 
-		       type memory.  */
-		    if (<MODE>mode == SImode || <MODE>mode == SFmode ||
-			<MODE>mode == DImode || <MODE>mode == DFmode)
-		      operands[1] = copy_to_mode_reg (<MODE>mode, operands[1]);
-		    else
-		      /* moving imm4 is supported by AMO instruction.  */
-		      if (!u4bits_operand (operands[1], <MODE>mode))
-			operands[1] = copy_to_mode_reg (<MODE>mode, operands[1]);
-		  }
-	       }
 	  }
 
 	  /* If operand-1 is a symbol, convert it into a BRO or GOT Format.  */
 	  if (flag_pic && ! legitimate_pic_operand_p (operands[1]))
     {
+      printf ("this can't be called\n");
       operands[1] = legitimize_pic_address (operands[1], <MODE>mode, 0);
     }
       }
@@ -312,149 +295,38 @@
 ;                QI,HI : 1
 ;                SI,SF : 2
 ;                DI,DF : 4
-;(define_insn "push<mode>_internal"
-;  [(set (match_operand:ALLMTD 0 "push_operand" "=<pushCnstr>")
-;	(match_operand:ALLMTD 1 "nosp_reg_operand" "b"))]
-;  ""
-;  "push\t$<tpush>,%p1"
-;  [(set_attr "length" "2")]
-;)
-
-; (DI, DF) move
-(define_insn "*mov<mode>_double"
-  [(set (match_operand:DOUBLE 0 "nonimmediate_operand" "=r, r, r, m")
-	(match_operand:DOUBLE 1 "general_operand" "r, <iFD>, m, r"))]
-  "register_operand (operands[0], DImode) 
-   || register_operand (operands[0], DFmode)
-   || register_operand (operands[1], DImode)
-   || register_operand (operands[1], DFmode)"
-  {
-    if (which_alternative == 0) {
-      rtx xoperands[2];
-      int reg0 = REGNO (operands[0]);
-      int reg1 = REGNO (operands[1]);
-
-      xoperands[0] = gen_rtx_REG (SImode, reg0 + 2);
-      xoperands[1] = gen_rtx_REG (SImode, reg1 + 2);
-      if ((reg1 + 2) != reg0)
-	{
-	  output_asm_insn ("movd\t%1, %0", operands);
-	  output_asm_insn ("movd\t%1, %0", xoperands);
-	}
-      else
-	{
-	  output_asm_insn ("movd\t%1, %0", xoperands);
-	  output_asm_insn ("movd\t%1, %0", operands);
-	}}
-
-    else if (which_alternative == 1) {
-      rtx lo_operands[2];
-      rtx hi_operands[2];
-
-      lo_operands[0] = gen_rtx_REG (SImode, REGNO (operands[0]));
-      hi_operands[0] = gen_rtx_REG (SImode, REGNO (operands[0]) + 2);
-      lo_operands[1] = simplify_gen_subreg (SImode, operands[1],
-		       VOIDmode == GET_MODE (operands[1])
-		       ? DImode  : GET_MODE (operands[1]), 0);
-      hi_operands[1] = simplify_gen_subreg (SImode, operands[1],
-		       VOIDmode == GET_MODE (operands[1])
-		       ? DImode  : GET_MODE (operands[1]), 4);
-      output_asm_insn ("movd\t%1, %0", lo_operands);
-      output_asm_insn ("movd\t%1, %0", hi_operands);}
-
-    else if (which_alternative == 2) {
-      rtx xoperands[2];
-      int reg0 = REGNO (operands[0]), reg1 = -2;
-      rtx addr;
-
-	if (MEM_P (operands[1]))
-	  addr = XEXP (operands[1], 0);
-	else
-	  addr = NULL_RTX;
-	switch (GET_CODE (addr))
-	  {
-	    case REG:
-	    case SUBREG:
-	      reg1 = REGNO (addr);
-	      break;
-	    case PLUS:
-	      switch (GET_CODE (XEXP (addr, 0))) {
-		case REG:
-		case SUBREG:
-		  reg1 = REGNO (XEXP (addr, 0));
-		  break;
-		case PLUS:
-		  reg1 = REGNO (XEXP (XEXP (addr, 0), 0));
-		  break;
-		default:
-		  inform (DECL_SOURCE_LOCATION (cfun->decl), "unexpected expression; addr:");
-		  debug_rtx (addr);
-		  inform (DECL_SOURCE_LOCATION (cfun->decl), "operands[1]:");
-		  debug_rtx (operands[1]);
-		  inform (DECL_SOURCE_LOCATION (cfun->decl), "generated code might now work\n");
-		  break;}
-	      break;
-	    default:
-	      break;
-	  }
-
-	xoperands[0] = gen_rtx_REG (SImode, reg0 + 2);
-	xoperands[1] = offset_address (operands[1], GEN_INT (4), 2);
-	gcc_assert ((reg0 + 1) != reg1);
-	if (reg0 != reg1  &&  (reg1 + 1) != reg0)
-	  {
-	    output_asm_insn ("loadd\t%1, %0", operands);
-	    output_asm_insn ("loadd\t%1, %0", xoperands);
-	  }
-	else
-	  {
-	    output_asm_insn ("loadd\t%1, %0", xoperands);
-	    output_asm_insn ("loadd\t%1, %0", operands);
-	  }}
-    else
-      {
-	rtx xoperands[2];
-	xoperands[0] = offset_address (operands[0], GEN_INT (4), 2);
-	xoperands[1] = gen_rtx_REG (SImode, REGNO (operands[1]) + 2);
-	output_asm_insn ("stord\t%1, %0", operands);
-   	output_asm_insn ("stord\t%1, %0", xoperands);
-      }
-    return "";
-  }
-  [(set_attr "length" "4, <lImmArithD>, <lImmArithD>, <lImmArithD>")]
+(define_insn "push<mode>_internal"
+  [(set (match_operand:ALLMTD 0 "push_operand" "=<pushCnstr>")
+	(match_operand:ALLMTD 1 "nosp_reg_operand" "b"))]
+  ""
+  "push\t$<tpush>,%p1thiscan'tbeused"
+  [(set_attr "length" "2")]
 )
 
 ; All long (SI, SF) register move, load and store operations
 ; The print_operand will take care of printing the register pair 
 ; when mode is SI/SF and register is in SHORT_REGS
 (define_insn "*mov<mode>_long"
-  [(set (match_operand:LONG 0 "nonimmediate_operand" "=r, r, r, m")
-	(match_operand:LONG 1 "general_operand" "r, <iF>, m, r"))]
-  "register_operand (operands[0], <MODE>mode)
-   || register_operand (operands[1], <MODE>mode)"
+  [(set (match_operand:LONG 0 "nonimmediate_operand" "=r,r,r,m")
+	(match_operand:LONG 1 "general_operand" "r,<iF>,m,r"))]
+  ""
   "@
-  mov<tIsa>\t%1, %0
-  mov<tIsa>\t%1, %0
-  load<tIsa>\t%1, %0
-  stor<tIsa>\t%1, %0"
+  mov\t\t%0, %1
+  mov\t\t%0, %1
+  ldr\t\t%0, %1
+  str\t\t%0, %1"
   [(set_attr "length" "2,<lImmArith>,<lImmArith>,<lImmArith>")]
 )
 
 ;; All short (QI, HI) register move, load and store operations
 (define_insn "*mov<mode>_short"
-  [(set (match_operand:SHORT 0 "nonimmediate_operand" "=r, r, r, m, m")
-	(match_operand:SHORT 1 "general_operand" "r, <iF>, m, r, <LL>"))]
-  "(register_operand (operands[0], <MODE>mode))
-    || (store_operand (operands[0], <MODE>mode)
-	&& (register_operand (operands[1], <MODE>mode)
-	    || u4bits_operand (operands[1], <MODE>mode)))"
+  [(set (match_operand:SHORT 0 "nonimmediate_operand" "=r,m")
+	(match_operand:SHORT 1 "general_operand" "m,r"))]
+  ""
   "@
-  mov<tIsa>\t%1, %0
-  mov<tIsa>\t%1, %0
-  load<tIsa>\t%1, %0
-  stor<tIsa>\t%1, %0
-  stor<tIsa>\t%1, %0"
-  [(set_attr "length" "2,<lImmArith>,<lImmArith>,<lImmArith>,<lImmArith>")]
+  ldr<tIsa>\t\t%0, %1
+  str<tIsa>\t\t%0, %1"
+  [(set_attr "length" "2,<lImmArith>,<lImmArith>,<lImmArith>")]
 )
 
 ;;  Compare Instructions
@@ -584,6 +456,7 @@
   {
     if (flag_pic && ! legitimate_pic_operand_p (operands[0]))
       {
+  printf ("this can't be called\n");
 	operands[0] = gen_const_mem (SImode,
 	legitimize_pic_address (XEXP (operands[0], 0), Pmode, 0));
 	emit_call_insn (gen_amo_call (operands[0], operands[1]));
@@ -657,6 +530,7 @@
   {
     if (flag_pic && !legitimate_pic_operand_p (operands[1]))
       {
+  printf ("this can't be called\n");
 	operands[1] = gen_const_mem (SImode,
 	legitimize_pic_address (XEXP (operands[1], 0), Pmode, 0));
 	emit_call_insn (gen_amo_call_value (operands[0], operands[1], operands[2]));

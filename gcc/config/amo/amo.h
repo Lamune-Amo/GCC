@@ -345,7 +345,7 @@ enum reg_class
 
 #define ACCUMULATE_OUTGOING_ARGS 0
 
-#define PUSH_ARGS 0
+#define PUSH_ARGS 1
 
 #define PUSH_ROUNDING(BYTES) amo_push_rounding (BYTES)
 
