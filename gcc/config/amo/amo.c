@@ -1782,105 +1782,6 @@ amo_prepare_push_pop_string (int push_or_pop)
   return return_str + 1;
 }
 
-
-/* Generate DWARF2 annotation for multi-push instruction.  */
-static void
-amo_create_dwarf_for_multi_push (rtx insn)
-{
-  rtx dwarf, reg, tmp;
-  int i, j, from, to, word_cnt, dwarf_par_index, inc;
-  int num_regs = 0, offset = 0, split_here = 0, total_push_bytes = 0;
-
-  for (i = 0; i <= current_frame_info.last_reg_to_save; ++i)
-    {
-      if (current_frame_info.save_regs[i])
-	{
-	  ++num_regs;
-	    total_push_bytes += 4;
-	}
-    }
-
-  if (!num_regs)
-    return;
-
-  dwarf = gen_rtx_SEQUENCE (VOIDmode, rtvec_alloc (num_regs + 1));
-  dwarf_par_index = num_regs;
-
-  from = current_frame_info.last_reg_to_save + 1;
-  to = current_frame_info.last_reg_to_save;
-  word_cnt = 0;
-
-  for (i = current_frame_info.last_reg_to_save; i >= 0;)
-    {
-      if (!current_frame_info.save_regs[i] || i == 0 || split_here)
-	{
-	  /* This block of regs is pushed in one instruction.  */
-	  if (i == 0 && current_frame_info.save_regs[i])
-	    from = 0;
-
-	  for (j = to; j >= from; --j)
-	    {
-	      reg = gen_rtx_REG (SImode, j);
-	      offset += 4;
-	      tmp = gen_rtx_SET (gen_frame_mem (SImode, plus_constant (Pmode, stack_pointer_rtx, total_push_bytes - offset)), reg);
-	      RTX_FRAME_RELATED_P (tmp) = 1;
-	      XVECEXP (dwarf, 0, dwarf_par_index--) = tmp;
-	    }
-	  from = i;
-	  to = --i;
-	  split_here = 0;
-	  word_cnt = 0;
-	  continue;
-	}
-
-      if (i != RETURN_ADDRESS_REGNUM)
-	{
-	  inc = 2;
-	  if (word_cnt + inc >= MAX_COUNT || FRAME_POINTER_REGNUM == i)
-	    {
-	      split_here = 1;
-	      from = i;
-	      continue;
-	    }
-	  word_cnt += inc;
-	}
-
-      from = i--;
-    }
-
-  tmp = gen_rtx_SET (stack_pointer_rtx, gen_rtx_PLUS (SImode, stack_pointer_rtx, GEN_INT (-offset)));
-  RTX_FRAME_RELATED_P (tmp) = 1;
-  XVECEXP (dwarf, 0, 0) = tmp;
-
-  add_reg_note (insn, REG_FRAME_RELATED_EXPR, dwarf);
-}
-
-/*
-CompactRISC AMO Architecture stack layout:
-
-     0 +---------------------
-    |
-    .
-    .
-    |
-    +==================== Sp (x) = Ap (x+1)
-      A | Args for functions
-      | | called by X and      Dynamically
-      | | Dynamic allocations  allocated and
-      | | (alloca, variable    deallocated
-  Stack | length arrays).
-  grows +-------------------- Fp (x)
-  down| | Local variables of X
-  ward| +--------------------
-      | | Regs saved for X-1
-      | +==================== Sp (x-1) = Ap (x)
-    | Args for func X
-    | pushed by X-1
-    +-------------------- Fp (x-1)
-    |
-    |
-    V
-*/
 void
 amo_expand_prologue (void)
 {
@@ -1897,7 +1798,6 @@ amo_expand_prologue (void)
     {
       /* If there are registers to push.  */
       insn = emit_insn (gen_push_for_prologue (GEN_INT (current_frame_info.reg_size)));
-      amo_create_dwarf_for_multi_push (insn);
       RTX_FRAME_RELATED_P (insn) = 1;
     }
 
@@ -1914,19 +1814,6 @@ amo_expand_prologue (void)
          pointing now to the locals.  */
       insn = emit_move_insn (frame_pointer_rtx, stack_pointer_rtx);
     }
-
-  printf ("-- prologue -------------------------------------------------\n");
-  printf ("local var size: %d\n", current_frame_info.var_size);
-  printf ("reg saved size: %d\n", current_frame_info.reg_size);
-  printf ("regs: ");
-  for (int regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
-  {
-    if (current_frame_info.save_regs[regno])
-    {
-      printf ("r%d ", regno);
-    }
-  }
-  printf ("\n");
 }
 
 /* Generate insn that updates the stack for local variables and padding 
@@ -1991,19 +1878,6 @@ amo_expand_epilogue (void)
 			     (GEN_INT (current_frame_info.reg_size)));
       RTX_FRAME_RELATED_P (insn) = 1;
     }
-
-  printf ("-- epilogue -------------------------------------------------\n");
-  printf ("local var size: %d\n", current_frame_info.var_size);
-  printf ("reg saved size: %d\n", current_frame_info.reg_size);
-  printf ("regs: ");
-  for (int regno = 0; regno < FIRST_PSEUDO_REGISTER; regno++)
-  {
-    if (current_frame_info.save_regs[regno])
-    {
-      printf ("r%d ", regno);
-    }
-  }
-  printf ("\n");
 }
 
 /* Implements FRAME_POINTER_REQUIRED.  */
