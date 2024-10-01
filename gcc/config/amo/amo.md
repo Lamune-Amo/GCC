@@ -315,7 +315,7 @@
   mov\t\t%0, %1
   ldr\t\t%0, %1
   str\t\t%0, %1"
-  [(set_attr "length" "2,<lImmArith>,<lImmArith>,<lImmArith>")]
+  [(set_attr "length" "2,2,2,2")]
 )
 
 ;; All short (QI, HI) register move, load and store operations
@@ -326,7 +326,7 @@
   "@
   ldr<tIsa>\t\t%0, %1
   str<tIsa>\t\t%0, %1"
-  [(set_attr "length" "2,<lImmArith>,<lImmArith>,<lImmArith>")]
+  [(set_attr "length" "2,2")]
 )
 
 ;;  Compare Instructions
