@@ -295,13 +295,13 @@
 ;                QI,HI : 1
 ;                SI,SF : 2
 ;                DI,DF : 4
-(define_insn "push<mode>_internal"
-  [(set (match_operand:ALLMTD 0 "push_operand" "=<pushCnstr>")
-	(match_operand:ALLMTD 1 "nosp_reg_operand" "b"))]
-  ""
-  "push\t$<tpush>,%p1thiscan'tbeused"
-  [(set_attr "length" "2")]
-)
+;(define_insn "push<mode>_internal"
+;  [(set (match_operand:ALLMTD 0 "push_operand" "=<pushCnstr>")
+;	(match_operand:ALLMTD 1 "nosp_reg_operand" "b"))]
+;  ""
+;  "push\t$<tpush>,%p1thiscan'tbeused"
+;  [(set_attr "length" "2")]
+;)
 
 ; All long (SI, SF) register move, load and store operations
 ; The print_operand will take care of printing the register pair 
@@ -320,13 +320,15 @@
 
 ;; All short (QI, HI) register move, load and store operations
 (define_insn "*mov<mode>_short"
-  [(set (match_operand:SHORT 0 "nonimmediate_operand" "=r,m")
-	(match_operand:SHORT 1 "general_operand" "m,r"))]
+  [(set (match_operand:SHORT 0 "nonimmediate_operand" "=r,r,r,m")
+	(match_operand:SHORT 1 "general_operand" "i,r,m,r"))]
   ""
   "@
+  mov %0, %1
+  mov %0, %1
   ldr<tIsa>\t%0, %1
   str<tIsa>\t%0, %1"
-  [(set_attr "length" "2,2")]
+  [(set_attr "length" "2,2,2,2")]
 )
 
 ;;  Compare Instructions

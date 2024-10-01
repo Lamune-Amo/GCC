@@ -1937,7 +1937,6 @@ amo_expand_prologue (void)
       RTX_FRAME_RELATED_P (insn) = 1;
     }
 
-
   if (current_frame_info.total_size > 0)
     {
       insn = emit_insn (gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx,
