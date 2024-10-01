@@ -1715,9 +1715,9 @@ amo_prepare_push_pop_string (int push_or_pop)
     {
       /* push */
       if (ins_num == 0)
-        sprintf (insn_buf, "str\t\t[sp], %s\n", reg_names[i]);
+        sprintf (insn_buf, "\tstr\t\t[sp], %s\n", reg_names[i]);
       else
-        sprintf (insn_buf, "str\t\t[sp, $%d], %s\n", ins_num * 4, reg_names[i]);
+        sprintf (insn_buf, "\tstr\t\t[sp, $%d], %s\n", ins_num * 4, reg_names[i]);
 
       strcpy (buffer, return_str);
       strcpy (return_str, insn_buf);
@@ -1727,9 +1727,9 @@ amo_prepare_push_pop_string (int push_or_pop)
     {
       /* pop */
       if (ins_num == 0)
-        sprintf (insn_buf, "ldr\t\t%s, [sp]\n", reg_names[i]);
+        sprintf (insn_buf, "\tldr\t\t%s, [sp]\n", reg_names[i]);
       else
-        sprintf (insn_buf, "ldr\t\t%s, [sp, $%d]\n", reg_names[i], ins_num * 4);
+        sprintf (insn_buf, "\tldr\t\t%s, [sp, $%d]\n", reg_names[i], ins_num * 4);
 
       strcat (return_str, insn_buf);
     }
@@ -1748,7 +1748,7 @@ amo_prepare_push_pop_string (int push_or_pop)
     */
     if (ins_num)
     {
-      sprintf (insn_buf, "sub\t\tsp, sp, $%d\n", ins_num * 4);
+      sprintf (insn_buf, "\tsub\t\tsp, sp, $%d\n", ins_num * 4);
 
       strcpy (buffer, return_str);
       strcpy (return_str, insn_buf);
@@ -1767,17 +1767,18 @@ amo_prepare_push_pop_string (int push_or_pop)
     */
     if (ins_num)
     {
-      sprintf (insn_buf, "add\t\tsp, sp, $%d\n", ins_num * 4);
+      sprintf (insn_buf, "\tadd\t\tsp, sp, $%d\n", ins_num * 4);
       strcat (return_str, insn_buf);
     }
 
     /* you may need fallowing conditional statement for interrupt handling */
     /* if (print_ra && !amo_interrupt_function_p () && !crtl->calls_eh_return) */
-    sprintf (insn_buf, "jmp\t\tlr\n");
+    sprintf (insn_buf, "\tjmp\t\tlr\n");
     strcat (return_str, insn_buf);
   }
   
-  printf ("[%s]\n", return_str);
+  /* remove newline */
+  return_str[strlen (return_str) - 1] = 0;
 
   return return_str;
 }
