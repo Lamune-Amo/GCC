@@ -246,8 +246,7 @@ amo_return_in_memory (const_tree type, const_tree fntype ATTRIBUTE_UNUSED)
 static bool
 amo_class_likely_spilled_p (reg_class_t rclass)
 {
-  if ((rclass) == SHORT_REGS || (rclass) == DOUBLE_BASE_REGS 
-      || (rclass) == LONG_REGS || (rclass) == GENERAL_REGS)
+  if ((rclass) == LONG_REGS || (rclass) == GENERAL_REGS)
     return true;
 
   return false;
@@ -1977,9 +1976,7 @@ amo_expand_epilogue (void)
   /* Nonzero if we need to return and pop only RA. This will generate a
      different insn. This differentiate is for the peepholes for call as 
      last statement in function.  */
-  int only_popret_RA = (current_frame_info.save_regs[RETURN_ADDRESS_REGNUM]
-			&& (current_frame_info.reg_size 
-			    == AMO_UNITS_PER_DWORD));
+  int only_popret_RA = (current_frame_info.save_regs[RETURN_ADDRESS_REGNUM] && (current_frame_info.reg_size == UNITS_PER_WORD));
   
   if (frame_pointer_needed)
     {

@@ -305,7 +305,7 @@
 
 ; All long (SI, SF) register move, load and store operations
 ; The print_operand will take care of printing the register pair 
-; when mode is SI/SF and register is in SHORT_REGS
+; when mode is SI/SF and register is in REGS.
 (define_insn "*mov<mode>_long"
   [(set (match_operand:LONG 0 "nonimmediate_operand" "=r,r,r,m")
 	(match_operand:LONG 1 "general_operand" "r,<iF>,m,r"))]

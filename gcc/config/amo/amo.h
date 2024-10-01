@@ -50,9 +50,6 @@ do                                              \
 
 #define UNITS_PER_WORD      4
 
-/* Units per 32-bit (DWORD).  */
-#define AMO_UNITS_PER_DWORD 4 // not for precompile
-
 #define POINTER_SIZE        32
 
 #define PARM_BOUNDARY       32
@@ -209,10 +206,8 @@ do                                              \
 enum reg_class
 {
   NO_REGS,
-  SHORT_REGS,
   LONG_REGS,
   NOSP_REGS,
-  DOUBLE_BASE_REGS,
   GENERAL_REGS,
   ALL_REGS,
   LIM_REG_CLASSES
@@ -223,10 +218,8 @@ enum reg_class
 #define REG_CLASS_NAMES	\
   {			\
     "NO_REGS",		\
-    "SHORT_REGS",	\
     "LONG_REGS",	\
     "NOSP_REGS",	\
-    "DOUBLE_BASE_REGS",	\
     "GENERAL_REGS",	\
     "ALL_REGS"		\
   }
@@ -234,10 +227,8 @@ enum reg_class
 #define REG_CLASS_CONTENTS			     		\
   {						     		\
     {0x00000000}, /* NO_REGS		             */  	\
-    {0x00000000}, /* SHORT_REGS 	: x    */   	\
     {0xFFFFFFFF}, /* LONG_REGS 		: 0 - 31    */  	\
     {0xBFFFFFFF}, /* NOSP_REGS 		: 0 - 29, 31     */   	\
-    {0x00000000}, /* DOUBLE_BASE_REGS   : x */  	\
     {0xFFFFFFFF}, /* GENERAL_REGS	: 0 - 31     */  	\
     {0xFFFFFFFF}  /* ALL_REGS 		: 0 - 31     */  	\
   }
@@ -247,9 +238,6 @@ enum reg_class
 #define REGNO_REG_CLASS(REGNO)  amo_regno_reg_class (REGNO)
 
 #define BASE_REG_CLASS      GENERAL_REGS
-
-//#define MODE_BASE_REG_CLASS(MODE) \
-  (GET_MODE_SIZE (MODE) <= 4 ?  (BASE_REG_CLASS) :  (DOUBLE_BASE_REGS))
 
 #define INDEX_REG_CLASS     GENERAL_REGS
 
@@ -278,13 +266,11 @@ enum reg_class
    The size of MODE in double words for the class LONG_REGS.
 
    The following check assumes if the class is not LONG_REGS, then
-   all (NO_REGS, SHORT_REGS, NOSP_REGS and GENERAL_REGS) other classes are 
+   all (NO_REGS, NOSP_REGS and GENERAL_REGS) other classes are 
    short.  We may have to check if this can cause any degradation in 
    performance.  */
 #define CLASS_MAX_NREGS(CLASS, MODE) \
-  (CLASS == LONG_REGS \
-   ? (GET_MODE_SIZE (MODE) + AMO_UNITS_PER_DWORD - 1) / AMO_UNITS_PER_DWORD\
-   : (GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
+  ((GET_MODE_SIZE (MODE) + UNITS_PER_WORD - 1) / UNITS_PER_WORD)
 
 /* Macros to check the range of integers . These macros were used across
    the port, majorly in constraints.md, predicates.md files. */

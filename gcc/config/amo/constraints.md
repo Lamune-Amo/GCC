@@ -23,9 +23,6 @@
 (define_register_constraint "b" "NOSP_REGS"
   "@no sp registers")
 
-(define_register_constraint "c" "SHORT_REGS"
-  "@short registers")
-
 (define_register_constraint "d" "LONG_REGS"
   "@long registers")
 
