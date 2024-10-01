@@ -145,7 +145,7 @@ do                                              \
   /* r16 r17 r18 r19 r20 r21 r22 r23 */                                          \
     0, 0, 0, 0, 0, 0, 0, 0,                                                      \
   /* r24 r25 r26 r27 r28 fp sp lr */                                             \
-    0, 0, 0, 0, 0, 0, 1, 1                                                       \
+    0, 0, 0, 0, 0, 0, 1, 0                                                       \
   }
 
 /* 1 for registers not available across function calls.

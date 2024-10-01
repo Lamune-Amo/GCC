@@ -1933,8 +1933,7 @@ amo_expand_prologue (void)
   if (current_frame_info.last_reg_to_save != -1)
     {
       /* If there are registers to push.  */
-      insn = emit_insn (gen_push_for_prologue
-			(GEN_INT (current_frame_info.reg_size)));
+      insn = emit_insn (gen_push_for_prologue (GEN_INT (current_frame_info.reg_size)));
       amo_create_dwarf_for_multi_push (insn);
       RTX_FRAME_RELATED_P (insn) = 1;
     }

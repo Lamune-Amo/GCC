@@ -324,8 +324,8 @@
 	(match_operand:SHORT 1 "general_operand" "m,r"))]
   ""
   "@
-  ldr<tIsa>\t\t%0, %1
-  str<tIsa>\t\t%0, %1"
+  ldr<tIsa>\t%0, %1
+  str<tIsa>\t%0, %1"
   [(set_attr "length" "2,2")]
 )
 
