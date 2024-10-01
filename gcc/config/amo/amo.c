@@ -1715,6 +1715,7 @@ amo_prepare_push_pop_string (int push_or_pop)
     ++i;
   }
 
+  i = 0;
   ins_num = 0;
   /* insn */
   while (i <= current_frame_info.last_reg_to_save)
@@ -1729,7 +1730,10 @@ amo_prepare_push_pop_string (int push_or_pop)
     if (push_or_pop == 0)
     {
       /* push */
-      sprintf (insn_buf, "str\t\t[sp, $%d], %s\n", (total_num - ins_num - 1) * 4, reg_names[i]);
+      if (total_num - ins_num - 1 == 0)
+        sprintf (insn_buf, "str\t\t[sp], %s\n", reg_names[i]);
+      else
+        sprintf (insn_buf, "str\t\t[sp, $%d], %s\n", (total_num - ins_num - 1) * 4, reg_names[i]);
 
       strcpy (buffer, return_str);
       strcpy (return_str, insn_buf);
@@ -1738,7 +1742,10 @@ amo_prepare_push_pop_string (int push_or_pop)
     else
     {
       /* pop */
-      sprintf (insn_buf, "ldr\t\t%s, [sp, $%d]\n", reg_names[i], ins_num * 4);
+      if (ins_num == 0)
+        sprintf (insn_buf, "ldr\t\t%s, [sp]\n", reg_names[i]);
+      else
+        sprintf (insn_buf, "ldr\t\t%s, [sp, $%d]\n", reg_names[i], ins_num * 4);
 
       strcat (return_str, insn_buf);
     }
@@ -1755,11 +1762,14 @@ amo_prepare_push_pop_string (int push_or_pop)
     /*    str   [sp], fp
     /*
     */
-    sprintf (insn_buf, "sub\t\tsp, sp, $%d\n", total_num * 4);
+    if (total_num)
+    {
+      sprintf (insn_buf, "sub\t\tsp, sp, $%d\n", total_num * 4);
 
-    strcpy (buffer, return_str);
-    strcpy (return_str, insn_buf);
-    strcat (return_str, buffer);
+      strcpy (buffer, return_str);
+      strcpy (return_str, insn_buf);
+      strcat (return_str, buffer);
+    }
   }
   else
   {
@@ -1771,8 +1781,11 @@ amo_prepare_push_pop_string (int push_or_pop)
     /*    jmp   lr
     /*
     */
-    sprintf (insn_buf, "add\t\tsp, sp, $%d\n", reg_names[i], total_num * 4);
-    strcat (return_str, insn_buf);
+    if (total_num)
+    {
+      sprintf (insn_buf, "add\t\tsp, sp, $%d\n", reg_names[i], total_num * 4);
+      strcat (return_str, insn_buf);
+    }
 
     /* you may need fallowing conditional statement for interrupt handling */
     /* if (print_ra && !amo_interrupt_function_p () && !crtl->calls_eh_return) */
