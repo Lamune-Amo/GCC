@@ -299,7 +299,7 @@ enum reg_class
 /* TODO_END */
 
 /* Stack layout and calling conventions.  */
-#define STACK_GROWS_DOWNWARD 1
+#define STACK_GROWS_DOWNWARD    1
 
 #define ARG_POINTER_REGNUM      28
 

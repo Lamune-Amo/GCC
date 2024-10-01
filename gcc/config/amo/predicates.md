@@ -28,15 +28,6 @@
   return ((GET_CODE (op) == MEM && OK_FOR_Z (op)));
 })
 
-;; Unsigned 4-bits constant int or double value.
-(define_predicate "u4bits_operand"
-  (match_code "const_int,const_double")
-{
-  if (GET_CODE (op) == CONST_DOUBLE)
-    return amo_const_double_ok (op);
-    return (UNSIGNED_INT_FITS_N_BITS(INTVAL (op), 4)) ? 1 : 0;
-})
-
 ;; Operand is a constant integer where
 ;; only one bit is set to 1.
 (define_predicate "one_bit_operand"
@@ -120,11 +111,6 @@
   if (GET_CODE (op) != CONST_INT) return 1;
     return (UNSIGNED_INT_FITS_N_BITS(INTVAL (op), 24)) ? 1 : 0;
 })
-
-;; Operand is register or 4-bit immediate operand
-(define_predicate "reg_or_u4bits_operand"
-  (ior (match_operand 0 "u4bits_operand")
-       (match_operand 0 "register_operand")))
 
 ;; Operand is a register or symbol reference
 (define_predicate "reg_or_sym_operand"

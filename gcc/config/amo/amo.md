@@ -286,23 +286,6 @@
   }
 )
 
-; ALLMT     : QI,HI,SI,SF
-; pushCnstr : Push constraints 
-;                QI : X
-;             HI,SI,SF,DI,DF : <
-; b         : All non-sp registers
-; tpush     : Push count
-;                QI,HI : 1
-;                SI,SF : 2
-;                DI,DF : 4
-;(define_insn "push<mode>_internal"
-;  [(set (match_operand:ALLMTD 0 "push_operand" "=<pushCnstr>")
-;	(match_operand:ALLMTD 1 "nosp_reg_operand" "b"))]
-;  ""
-;  "push\t$<tpush>,%p1thiscan'tbeused"
-;  [(set_attr "length" "2")]
-;)
-
 ; All long (SI, SF) register move, load and store operations
 ; The print_operand will take care of printing the register pair 
 ; when mode is SI/SF and register is in REGS.
@@ -324,8 +307,8 @@
 	(match_operand:SHORT 1 "general_operand" "i,r,m,r"))]
   ""
   "@
-  mov %0, %1
-  mov %0, %1
+  mov\t\t%0, %1
+  mov\t\t%0, %1
   ldr<tIsa>\t%0, %1
   str<tIsa>\t%0, %1"
   [(set_attr "length" "2,2,2,2")]
