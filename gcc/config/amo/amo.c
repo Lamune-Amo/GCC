@@ -1690,7 +1690,7 @@ amo_prepare_push_pop_string (int push_or_pop)
 {
   char insn_buf[50];
   char *buffer, *return_str;
-  int ins_num, total_num;
+  int ins_num;
   int i;
 
   buffer = (char *) xmalloc (160);
@@ -1698,22 +1698,6 @@ amo_prepare_push_pop_string (int push_or_pop)
 
   memset (buffer, 0, 160);
   memset (return_str, 0, 160);
-
-  i = 0;
-  total_num = 0;
-  /* pre-count */
-  while (i <= current_frame_info.last_reg_to_save)
-  {
-    if (!current_frame_info.save_regs[i])
-    {
-      /* Move to next reg and break.  */
-      ++i;
-      continue;
-    }
-    
-	  ++total_num;
-    ++i;
-  }
 
   i = 0;
   ins_num = 0;
@@ -1730,10 +1714,10 @@ amo_prepare_push_pop_string (int push_or_pop)
     if (push_or_pop == 0)
     {
       /* push */
-      if (total_num - ins_num - 1 == 0)
+      if (ins_num == 0)
         sprintf (insn_buf, "str\t\t[sp], %s\n", reg_names[i]);
       else
-        sprintf (insn_buf, "str\t\t[sp, $%d], %s\n", (total_num - ins_num - 1) * 4, reg_names[i]);
+        sprintf (insn_buf, "str\t\t[sp, $%d], %s\n", ins_num * 4, reg_names[i]);
 
       strcpy (buffer, return_str);
       strcpy (return_str, insn_buf);
@@ -1762,9 +1746,9 @@ amo_prepare_push_pop_string (int push_or_pop)
     /*    str   [sp], fp
     /*
     */
-    if (total_num)
+    if (ins_num)
     {
-      sprintf (insn_buf, "sub\t\tsp, sp, $%d\n", total_num * 4);
+      sprintf (insn_buf, "sub\t\tsp, sp, $%d\n", ins_num * 4);
 
       strcpy (buffer, return_str);
       strcpy (return_str, insn_buf);
@@ -1781,9 +1765,9 @@ amo_prepare_push_pop_string (int push_or_pop)
     /*    jmp   lr
     /*
     */
-    if (total_num)
+    if (ins_num)
     {
-      sprintf (insn_buf, "add\t\tsp, sp, $%d\n", reg_names[i], total_num * 4);
+      sprintf (insn_buf, "add\t\tsp, sp, $%d\n", ins_num * 4);
       strcat (return_str, insn_buf);
     }
 
