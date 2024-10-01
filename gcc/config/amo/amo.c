@@ -1688,134 +1688,100 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
 char *
 amo_prepare_push_pop_string (int push_or_pop)
 {
-  /* j is the number of registers being saved, takes care that there won't be
-     more than 8 in one push/pop instruction.  */
+  char insn_buf[50];
+  char *buffer, *return_str;
+  int ins_num, total_num;
+  int i;
 
-  /* For the register mask string.  */
-  static char one_inst_str[50];
-
-  /* i is the index of current_frame_info.save_regs[], going from 0 until 
-     current_frame_info.last_reg_to_save.  */
-  int i, start_reg;
-  int word_cnt;
-  int print_ra;
-  char *return_str;
-
-  /* For reversing on the push instructions if there are more than one.  */
-  char *temp_str;
-
+  buffer = (char *) xmalloc (160);
   return_str = (char *) xmalloc (160);
-  temp_str = (char *) xmalloc (160);
 
-  /* Initialize.  */
-  memset (return_str, 0, 3);
+  memset (buffer, 0, 160);
+  memset (return_str, 0, 160);
 
   i = 0;
+  total_num = 0;
+  /* pre-count */
   while (i <= current_frame_info.last_reg_to_save)
+  {
+    if (!current_frame_info.save_regs[i])
     {
-      /* Prepare mask for one instruction.  */
-      one_inst_str[0] = 0;
-
-      /* To count number of words in one instruction.  */
-      word_cnt = 0;
-      start_reg = i;
-      print_ra = 0;
-      while ((word_cnt < MAX_COUNT) 
-	     && (i <= current_frame_info.last_reg_to_save))
-	{
-	  /* For each non consecutive save register, 
-	     a new instruction shall be generated.  */
-	  if (!current_frame_info.save_regs[i])
-	    {
-	      /* Move to next reg and break.  */
-	      ++i;
-	      break;
-	    }
-
-	  if (i == RETURN_ADDRESS_REGNUM)
-	    print_ra = 1;
-	  else
-	    {
-	      /* Check especially if adding 2 does not cross the MAX_COUNT.  */
-	      if ((word_cnt + 1) >= MAX_COUNT)
-          break;
-	      /* Increase word count by 2 for long registers except RA.   */
-	      word_cnt += 1;
-	    }
-	  ++i;
-	}
-
-      /* No need to generate any instruction as
-         no register or RA needs to be saved.  */
-      if ((word_cnt == 0) && (print_ra == 0))
-	continue;
-
-      /* Now prepare the instruction operands.  */
-      if (word_cnt > 0)
-	{
-	  sprintf (one_inst_str, "$%d, %s", word_cnt, reg_names[start_reg]);
-	  if (print_ra)
-	    strcat (one_inst_str, ", ra");
-	}
-      else
-	strcat (one_inst_str, "ra");
-
-      if (push_or_pop == 1)
-	{
-	  /* Pop instruction.  */
-	  if (print_ra && !amo_interrupt_function_p ()
-	      && !crtl->calls_eh_return)
-	    /* Print popret if RA is saved and its not a interrupt 
-	       function.  */
-	    strcpy (temp_str, "\n\tpopret\t");
-	  else
-	    strcpy (temp_str, "\n\tpop\t");
-
-	  strcat (temp_str, one_inst_str);
-
-	  /* Add the pop instruction list.  */
-	  strcat (return_str, temp_str);
-	}
-      else
-	{
-	  /* Push instruction.  */
-	  strcpy (temp_str, "\n\tpush\t");
-	  strcat (temp_str, one_inst_str);
-
-	  /* We need to reverse the order of the instructions if there
-	     are more than one. (since the pop will not be reversed in 
-	     the epilogue.  */
-	  strcat (temp_str, return_str);
-	  strcpy (return_str, temp_str);
-	}
+      /* Move to next reg and break.  */
+      ++i;
+      continue;
     }
+    
+	  ++total_num;
+    ++i;
+  }
 
-  if (push_or_pop == 1)
+  ins_num = 0;
+  /* insn */
+  while (i <= current_frame_info.last_reg_to_save)
+  {
+    if (!current_frame_info.save_regs[i])
     {
-      /* POP.  */
-      if (amo_interrupt_function_p ())
-	strcat (return_str, "\n\tretx\n");
-      else if (crtl->calls_eh_return)
-	{
-	  /* Add stack adjustment before returning to exception handler
-	     NOTE: EH_RETURN_STACKADJ_RTX must refer to (r5, r4).  */
-	  strcat (return_str, "\n\taddd\t (r5, r4), (sp)\t\n");
-	  strcat (return_str, "\n\tjump\t (ra)\n");
-
-	  /* But before anything else, undo the adjustment addition done in
-	     amo_expand_epilogue ().  */
-	  strcpy (temp_str, "\n\tsubd\t (r5, r4), (sp)\t\n");
-	  strcat (temp_str, return_str);
-	  strcpy (return_str, temp_str);
-	}
-      else if (!FUNC_IS_NORETURN_P (current_function_decl)
-	       && !(current_frame_info.save_regs[RETURN_ADDRESS_REGNUM]))
-	strcat (return_str, "\n\tjump\t (ra)\n");
+      /* Move to next reg and break.  */
+      ++i;
+      continue;
     }
+    
+    if (push_or_pop == 0)
+    {
+      /* push */
+      sprintf (insn_buf, "str\t\t[sp, $%d], %s\n", (total_num - ins_num - 1) * 4, reg_names[i]);
 
+      strcpy (buffer, return_str);
+      strcpy (return_str, insn_buf);
+      strcat (return_str, buffer);
+    }
+    else
+    {
+      /* pop */
+      sprintf (insn_buf, "ldr\t\t%s, [sp, $%d]\n", reg_names[i], ins_num * 4);
+
+      strcat (return_str, insn_buf);
+    }
+    ++ins_num;
+    ++i;
+  }
+   
+  if (push_or_pop == 0)
+  {
+    /* push */
+    /*
+    /*    sub   sp, sp, $8
+    /*    str   [sp, 4], ra
+    /*    str   [sp], fp
+    /*
+    */
+    sprintf (insn_buf, "sub\t\tsp, sp, $%d\n", total_num * 4);
+
+    strcpy (buffer, return_str);
+    strcpy (return_str, insn_buf);
+    strcat (return_str, buffer);
+  }
+  else
+  {
+    /* pop */
+    /*
+    /*    ldr   fp, [sp]
+    /*    ldr   lr, [sp, 4]
+    /*    add   sp, sp, $8
+    /*    jmp   lr
+    /*
+    */
+    sprintf (insn_buf, "add\t\tsp, sp, $%d\n", reg_names[i], total_num * 4);
+    strcat (return_str, insn_buf);
+
+    /* you may need fallowing conditional statement for interrupt handling */
+    /* if (print_ra && !amo_interrupt_function_p () && !crtl->calls_eh_return) */
+    sprintf (insn_buf, "jmp\t\tlr\n");
+    strcat (return_str, insn_buf);
+  }
+  
   printf ("[%s]\n", return_str);
-  /* Skip the newline and the tab in the start of return_str.  */
-  return_str += 2;
+
   return return_str;
 }
 
