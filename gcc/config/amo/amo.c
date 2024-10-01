@@ -1813,6 +1813,7 @@ amo_prepare_push_pop_string (int push_or_pop)
 	strcat (return_str, "\n\tjump\t (ra)\n");
     }
 
+  printf ("[%s]\n", return_str);
   /* Skip the newline and the tab in the start of return_str.  */
   return_str += 2;
   return return_str;
