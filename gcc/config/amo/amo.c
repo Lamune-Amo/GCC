@@ -1779,8 +1779,7 @@ amo_prepare_push_pop_string (int push_or_pop)
   
   /* remove newline */
   return_str[strlen (return_str) - 1] = 0;
-
-  return return_str;
+  return return_str + 1;
 }
 
 
