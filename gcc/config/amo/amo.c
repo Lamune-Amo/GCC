@@ -1560,7 +1560,7 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
 	       reg_names[REGNO (address.base)]);
       break;
     default:
-      printf ("----------here -----------------\n")
+      printf ("----------here -----------------\n");
       debug_rtx (addr);
       gcc_unreachable ();
     }
