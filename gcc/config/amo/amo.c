@@ -40,6 +40,7 @@
 #include "conditions.h"
 #include "output.h"
 #include "expr.h"
+#include "explow.h"
 #include "builtins.h"
 
 /* This file should be included last.  */
