@@ -1629,16 +1629,25 @@ amo_expand_compare_branch (rtx *operands)
 	rtx opn1 = operands[1];
 	rtx opn2 = operands[2];
 
-	machine_mode mode = GET_MODE(opn1);
+	machine_mode mode = GET_MODE (opn1);
 
 	gcc_assert(operands[3] != NULL);
-	gcc_assert(register_operand(opn1, mode) && register_operand(opn2, mode));
 
-	code = gen_rtx_fmt_ee(GET_CODE(operands[0]), mode, opn1, opn2);
-	label = gen_rtx_LABEL_REF(VOIDmode, operands[3]);
+	if (!register_operand (opn1, mode))
+  {
+		opn1 = force_reg (mode, opn1);
+  }
 
-	insn = gen_rtx_SET(pc_rtx, gen_rtx_IF_THEN_ELSE(VOIDmode, code, label, pc_rtx));
-	emit_jump_insn(insn); 
+	if (GET_CODE (opn2) != REG && GET_CODE (opn2) != CONST_INT)
+  {
+		opn2 = force_reg (mode, opn2);
+  }
+
+	code = gen_rtx_fmt_ee (GET_CODE (operands[0]), mode, opn1, opn2);
+	label = gen_rtx_LABEL_REF (VOIDmode, operands[3]);
+
+	insn = gen_rtx_SET (pc_rtx, gen_rtx_IF_THEN_ELSE (VOIDmode, code, label, pc_rtx));
+	emit_jump_insn (insn); 
 }
 
 /* Machine description helper functions.  */

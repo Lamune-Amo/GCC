@@ -333,7 +333,7 @@
   [(set (pc)
     (if_then_else (
         eq:SI (match_operand:SI 0 "register_operand" "r")
-              (match_operand:SI 1 "register_operand" "r"))
+              (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -344,7 +344,7 @@
   [(set (pc)
     (if_then_else (
         ne:SI (match_operand:SI 0 "register_operand" "r")
-              (match_operand:SI 1 "register_operand" "r"))
+              (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -355,7 +355,7 @@
   [(set (pc)
     (if_then_else (
         gt:SI (match_operand:SI 0 "register_operand" "r")
-              (match_operand:SI 1 "register_operand" "r"))
+              (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -366,7 +366,7 @@
   [(set (pc)
     (if_then_else (
         ge:SI (match_operand:SI 0 "register_operand" "r")
-              (match_operand:SI 1 "register_operand" "r"))
+              (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -377,7 +377,7 @@
   [(set (pc)
     (if_then_else (
         lt:SI (match_operand:SI 0 "register_operand" "r")
-              (match_operand:SI 1 "register_operand" "r"))
+              (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -388,7 +388,7 @@
   [(set (pc)
     (if_then_else (
         le:SI (match_operand:SI 0 "register_operand" "r")
-              (match_operand:SI 1 "register_operand" "r"))
+              (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -399,7 +399,7 @@
   [(set (pc)
     (if_then_else (
         gtu:SI (match_operand:SI 0 "register_operand" "r")
-               (match_operand:SI 1 "register_operand" "r"))
+               (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -410,7 +410,7 @@
   [(set (pc)
     (if_then_else (
         geu:SI (match_operand:SI 0 "register_operand" "r")
-               (match_operand:SI 1 "register_operand" "r"))
+               (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -421,7 +421,7 @@
   [(set (pc)
     (if_then_else (
         ltu:SI (match_operand:SI 0 "register_operand" "r")
-               (match_operand:SI 1 "register_operand" "r"))
+               (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
@@ -432,7 +432,7 @@
   [(set (pc)
     (if_then_else (
         leu:SI (match_operand:SI 0 "register_operand" "r")
-               (match_operand:SI 1 "register_operand" "r"))
+               (match_operand:SI 1 "nonmemory_operand" "r"))
         (label_ref (match_operand 2))
         (pc)))]
   ""
