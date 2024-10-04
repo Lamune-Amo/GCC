@@ -1518,7 +1518,7 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
 
   if (address.disp && GET_CODE (address.disp) == UNSPEC)
     {
-      printf ("err from here");
+      fprintf (stderr, "err from here\n");
       debug_rtx (addr);
     }
 
