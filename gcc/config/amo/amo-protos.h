@@ -80,6 +80,7 @@ extern int amo_const_double_ok (rtx op);
 extern int legitimate_pic_operand_p (rtx);
 extern rtx legitimize_pic_address (rtx, machine_mode, rtx);
 
+extern void amo_expand_compare_branch (rtx *operands);
 
 /* Prologue/Epilogue functions.  */
 extern int amo_initial_elimination_offset (int, int);

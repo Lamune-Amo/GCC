@@ -315,58 +315,128 @@
 )
 
 ;;  Compare Instructions
-; Instruction generated compares the operands in reverse order
-; Therefore, while printing the asm, the reverse of the
-; compare condition shall be printed.
-(define_insn "cbranch<mode>4"
+(define_expand "cbranchsi4"
   [(set (pc)
-	(if_then_else (match_operator 0 "ordered_comparison_operator"
-		      [(match_operand:AMOIM 1 "register_operand" "r,r")
-		       (match_operand:AMOIM 2 "nonmemory_operand" "r,n")])
-		       (label_ref (match_operand 3 "" ""))
-                      (pc)))
-   (clobber (cc0))]
+    (if_then_else (match_operator:VOID 0 "comparison_operator"
+            [(match_operand:SI 1 "general_operand")
+             (match_operand:SI 2 "general_operand")])
+             (label_ref (match_operand 3 "" ""))
+                        (pc)))]
   ""
-  "cmp<tIsa>\t%2, %1\;b%d0\t%l3"
-  [(set_attr "length" "6,6")]
+  {
+    amo_expand_cond_branch(operands);
+    DONE;
+  }
 )
 
-(define_expand "cmp<mode>"
-  [(parallel [(set (cc0)
-    (compare (match_operand:AMOIM 0 "register_operand" "")
-	     (match_operand:AMOIM 1 "nonmemory_operand" "")))
-    (clobber (match_scratch:HI 2 "=r"))] ) ]
+(define_insn "cond_branch_eq"
+  [(set (pc)
+    (if_then_else (
+        eq:SI (match_operand:SI 0 "register_operand" "r")
+              (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
   ""
-  "")
-
-;;  Scond Instructions
-(define_expand "cstore<mode>4"
-  [(set (cc0)
-	(compare (match_operand:AMOIM 2 "register_operand" "")
-		 (match_operand:AMOIM 3 "nonmemory_operand" "")))
-   (set (match_operand:HI 0 "register_operand")
-	(match_operator:HI 1 "ordered_comparison_operator"
-	[(cc0) (const_int 0)]))]
-  ""
-  ""
+  "beq %0, %1, %2"
 )
 
-(define_insn "*cmp<mode>_insn"
-  [(set (cc0)
-	(compare (match_operand:AMOIM 0 "register_operand" "r,r")
-		 (match_operand:AMOIM 1 "nonmemory_operand" "r,n")))]
+(define_insn "cond_branch_ne"
+  [(set (pc)
+    (if_then_else (
+        ne:SI (match_operand:SI 0 "register_operand" "r")
+              (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
   ""
-  "cmp<tIsa>\t%1, %0"
-  [(set_attr "length" "2,4")]
+  "bne %0, %1, %2"
 )
 
-(define_insn "sCOND_internal"
-  [(set (match_operand:HI 0 "register_operand" "=r")
-	(match_operator:HI 1 "ordered_comparison_operator"
-	[(cc0) (const_int 0)]))]
+(define_insn "cond_branch_gt"
+  [(set (pc)
+    (if_then_else (
+        gt:SI (match_operand:SI 0 "register_operand" "r")
+              (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
   ""
-  "s%d1\t%0"
-  [(set_attr "length" "2")]
+  "blt %1, %0, %2"
+)
+
+(define_insn "cond_branch_ge"
+  [(set (pc)
+    (if_then_else (
+        ge:SI (match_operand:SI 0 "register_operand" "r")
+              (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
+  ""
+  "ble %1, %0, %2"
+)
+
+(define_insn "cond_branch_lt"
+  [(set (pc)
+    (if_then_else (
+        lt:SI (match_operand:SI 0 "register_operand" "r")
+              (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
+  ""
+  "blt %0, %1, %2"
+)
+
+(define_insn "cond_branch_le"
+  [(set (pc)
+    (if_then_else (
+        le:SI (match_operand:SI 0 "register_operand" "r")
+              (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
+  ""
+  "ble %0, %1, %2"
+)
+
+(define_insn "cond_branch_gtu"
+  [(set (pc)
+    (if_then_else (
+        gtu:SI (match_operand:SI 0 "register_operand" "r")
+               (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
+  ""
+  "bltu %1, %0, %2"
+)
+
+(define_insn "cond_branch_geu"
+  [(set (pc)
+    (if_then_else (
+        geu:SI (match_operand:SI 0 "register_operand" "r")
+               (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
+  ""
+  "bleu %1, %0, %2"
+)
+
+(define_insn "cond_branch_ltu"
+  [(set (pc)
+    (if_then_else (
+        ltu:SI (match_operand:SI 0 "register_operand" "r")
+               (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
+  ""
+  "bltu %0, %1, %2"
+)
+
+(define_insn "cond_branch_leu"
+  [(set (pc)
+    (if_then_else (
+        leu:SI (match_operand:SI 0 "register_operand" "r")
+               (match_operand:SI 1 "register_operand" "r"))
+        (label_ref (match_operand 2))
+        (pc)))]
+  ""
+  "bleu %0, %1, %2"
 )
 
 ;;  Jumps and Branches
@@ -375,7 +445,7 @@
 	  (reg:SI RA_REGNUM))
    (return)]
   "reload_completed"
-  "jump\t (ra)"
+  "jmp\t\tlr"
   [(set_attr "length" "2")]
 )
 
@@ -383,7 +453,7 @@
   [(unspec:SI [(const_int 0)] UNSPEC_RETURN_ADDR)
    (return)]
   "reload_completed"
-  "jump\t(ra)"
+  "jmp\t\tlr"
   [(set_attr "length" "2")]
 )
 
@@ -392,8 +462,8 @@
 	(match_operand:SI 0 "reg_or_sym_operand" "r,i"))]
   ""
   "@
-  jump\t%0
-  br\t%a0"
+  jmp\t\t%0
+  jmp\t\t%a0"
   [(set_attr "length" "2,6")]
 )
 
@@ -411,7 +481,7 @@
   [(set (pc)
 	(match_operand 0 "jump_imm_operand" "i"))]
   ""
-  "br\t%c0"
+  "jmp_imm\t%c0"
   [(set_attr "length" "6")]
 )
 
@@ -419,7 +489,7 @@
   [(set (pc)
 	(label_ref (match_operand 0 "" "")))]
   ""
-  "br\t%l0"
+  "jmp\t\t%l0"
   [(set_attr "length" "6")]
 )
 
@@ -429,7 +499,7 @@
 	(match_operand:SI 0 "register_operand" "r"))
    (use (label_ref:SI (match_operand 1 "" "")))]
   "!flag_pic"
-  "jump\t%0"
+  "jmp\t\t%0"
   [(set_attr "length" "2")]
 )
 

@@ -1427,61 +1427,9 @@ amo_print_operand (FILE * file, rtx x, int code)
 
   switch (code)
     {
-    case 'd':
-      {
-	const char *amo_cmp_str;
-	switch (GET_CODE (x))
-	  {
-	    /* MD: compare (reg, reg or imm) but AMO: cmp (reg or imm, reg)
-	       -> swap all non symmetric ops.  */
-	  case EQ:
-	    amo_cmp_str = "eq";
-	    break;
-	  case NE:
-	    amo_cmp_str = "ne";
-	    break;
-	  case GT:
-	    amo_cmp_str = "lt";
-	    break;
-	  case GTU:
-	    amo_cmp_str = "lo";
-	    break;
-	  case LT:
-	    amo_cmp_str = "gt";
-	    break;
-	  case LTU:
-	    amo_cmp_str = "hi";
-	    break;
-	  case GE:
-	    amo_cmp_str = "le";
-	    break;
-	  case GEU:
-	    amo_cmp_str = "ls";
-	    break;
-	  case LE:
-	    amo_cmp_str = "ge";
-	    break;
-	  case LEU:
-	    amo_cmp_str = "hs";
-	    break;
-	  default:
-	    gcc_unreachable ();
-	  }
-	fprintf (file, "%s", amo_cmp_str);
-	return;
-      }
     case '$':
       putc ('$', file);
       return;
-
-    case 'p':
-      if (GET_CODE (x) == REG)
-	{
-	  /* For Push instructions, we should not print register pairs.  */
-	  fprintf (file, "%s", reg_names[REGNO (x)]);
-	  return;
-	}
-      break;
 
     case 'b':
       /* Print the immediate address for bal 
@@ -1511,16 +1459,7 @@ amo_print_operand (FILE * file, rtx x, int code)
       switch (GET_CODE (x))
 	{
 	case REG:
-	  if (GET_MODE_BITSIZE (GET_MODE (x)) > BITS_PER_WORD)
-	    {
-	      if (LONG_REG_P (REGNO (x)))
-		fprintf (file, "(%s)", reg_names[REGNO (x)]);
-	      else
-		fprintf (file, "(%s,%s)", reg_names[REGNO (x) + 1],
-			 reg_names[REGNO (x)]);
-	    }
-	  else
-	    fprintf (file, "%s", reg_names[REGNO (x)]);
+	  fprintf (file, "%s", reg_names[REGNO (x)]);
 	  return;
 
 	case MEM:
@@ -1675,6 +1614,39 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
     {
       fprintf (file, "@GOT (%s)", reg_names[PIC_OFFSET_TABLE_REGNUM]);
     }
+}
+
+/* compare-and-branch */
+void
+amo_expand_compare_branch (rtx *operands)
+{
+	rtx insn, code, label;
+
+  /* operand[0]: comparison operator  */
+  /* operand[1]: first operand        */
+  /* operand[2]: second operand       */
+  /* operand[3]: destination          */
+	rtx opn1 = operands[1];
+	rtx opn2 = operands[2];
+
+	machine_mode mode = GET_MODE(opn1);
+
+	gcc_assert(operands[3] != NULL);
+
+	if (!register_operand(opn1, mode))
+  {
+		opn1 = force_reg(mode, opn1);
+  }
+	if (!register_operand(opn2, mode))
+  {
+		opn2 = force_reg(mode, opn2);
+  }
+
+	code = gen_rtx_fmt_ee(GET_CODE(operands[0]), mode, opn1, opn2);
+	label = gen_rtx_LABEL_REF(VOIDmode, operands[3]);
+
+	insn = gen_rtx_SET(pc_rtx, gen_rtx_IF_THEN_ELSE(VOIDmode, code, label, pc_rtx));
+	emit_jump_insn(insn); 
 }
 
 /* Machine description helper functions.  */
