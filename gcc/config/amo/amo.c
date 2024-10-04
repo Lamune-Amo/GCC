@@ -1518,7 +1518,6 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
 
   if (address.disp && GET_CODE (address.disp) == UNSPEC)
     {
-      fprintf (stderr, "err from here\n");
       debug_rtx (addr);
     }
 
@@ -1561,6 +1560,7 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
 	       reg_names[REGNO (address.base)]);
       break;
     default:
+      printf ("----------here -----------------\n")
       debug_rtx (addr);
       gcc_unreachable ();
     }
