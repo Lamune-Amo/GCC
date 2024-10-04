@@ -324,7 +324,7 @@
                         (pc)))]
   ""
   {
-    amo_expand_cond_branch(operands);
+    amo_expand_compare_branch (operands);
     DONE;
   }
 )

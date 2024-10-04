@@ -1632,15 +1632,7 @@ amo_expand_compare_branch (rtx *operands)
 	machine_mode mode = GET_MODE(opn1);
 
 	gcc_assert(operands[3] != NULL);
-
-	if (!register_operand(opn1, mode))
-  {
-		opn1 = force_reg(mode, opn1);
-  }
-	if (!register_operand(opn2, mode))
-  {
-		opn2 = force_reg(mode, opn2);
-  }
+	gcc_assert(register_operand(opn1, mode) && register_operand(opn2, mode));
 
 	code = gen_rtx_fmt_ee(GET_CODE(operands[0]), mode, opn1, opn2);
 	label = gen_rtx_LABEL_REF(VOIDmode, operands[3]);
