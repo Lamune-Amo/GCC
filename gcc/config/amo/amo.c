@@ -731,6 +731,7 @@ amo_decompose_address (rtx addr, struct amo_address *out)
       switch (GET_CODE (XEXP (addr, 0)))
       {
       case REG:
+        disp = XEXP (addr, 1);
         /* REG + IMM16(IMM18) */
         switch (GET_CODE (XEXP (addr, 1)))
         {
