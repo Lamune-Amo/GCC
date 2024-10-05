@@ -37,31 +37,32 @@ extern void amo_init_cumulative_args (CUMULATIVE_ARGS *, tree, rtx);
 
 #ifdef RTX_CODE
 
+#define ADDRESS_TYPE_DATA 0
+#define ADDRESS_TYPE_CODE 1
+#define ADDRESS_TYPE_LABEL 2 /* function label */
+
 /* Addressing Modes.  */
 struct amo_address
 {
   rtx base;	 	/* Base register: Any register or register pair.  */
   rtx index;		/* Index register: If one is present.  */
   rtx disp;		/* Displacement or Absolute address.  */
-  int code;		/* Whether the address is code address. 
+  int type;		/* Whether the address is code address. 
 			   0 - data, 1 - code label, 2 - function label.  */
 };
 
 enum amo_addrtype
 {
   AMO_INVALID,
-  AMO_REG_REL,
-  AMO_REGP_REL,
-  AMO_INDEX_REGP_REL,
+  AMO_REG_ABSOLUTE,
+  AMO_REG_INDEX,
   AMO_ABSOLUTE
 };
 
 extern void notice_update_cc (rtx);
 extern int amo_operand_bit_pos (int val, int bitval);
 extern enum amo_addrtype amo_decompose_address (rtx addr,
-						  struct amo_address *out,
-						  bool debug_print,
-						  bool treat_as_const);
+						  struct amo_address *out);
 extern int amo_const_double_ok (rtx op);
 extern int legitimate_pic_operand_p (rtx);
 extern rtx legitimize_pic_address (rtx, machine_mode, rtx);

@@ -692,119 +692,71 @@ amo_addr_reg_p (rtx addr_reg)
    as defined in enum amo_addrtype.  It also fills the parameter *out.
    The decomposed address can be used for two purposes.  One to 
    check if the address is valid and second to print the address
-   operand.
-
-   Following tables list valid address supported in AMOC/C+ architectures.
-   Legend: 
-   aN : Absoulte address N-bit address
-   R  : One 16-bit register
-   RP : Consecutive two 16-bit registers or one 32-bit register
-   I  : One 32-bit register
-   dispN : Signed displacement of N-bits
-
-   ----Code addresses----
-   Branch operands:
-   disp9        : AMO_ABSOLUTE       (disp)
-   disp17       : AMO_ABSOLUTE       (disp)
-   disp25       : AMO_ABSOLUTE       (disp)
-   RP + disp25  : AMO_REGP_REL       (base, disp)
-
-   Jump operands:
-   RP           : AMO_REGP_REL       (base, disp=0)
-   a24          : AMO_ABSOLUTE       (disp)
-
-   ----Data addresses----
-   a20          : AMO_ABSOLUTE       (disp)                near (1M)
-   a24          : AMO_ABSOLUTE       (disp)                medium  (16M)
-   R  + d20     : AMO_REG_REL        (base,  disp)         near (1M+64K)
-   RP + d4      : AMO_REGP_REL       (base,  disp)         far  (4G)
-   RP + d16     : AMO_REGP_REL       (base,  disp)         far  (4G)
-   RP + d20     : AMO_REGP_REL       (base,  disp)         far  (4G)
-   I            : *** Valid but port does not support this
-   I  + a20     : *** Valid but port does not support this
-   I  + RP + d14: AMO_INDEX_REGP_REL (base,  index, disp)  far  (4G)
-   I  + RP + d20: AMO_INDEX_REGP_REL (base,  index, disp)  far  (4G) */
-
+   operand. */
 enum amo_addrtype
-amo_decompose_address (rtx addr, struct amo_address *out,
-			bool debug_print, bool treat_as_const)
+amo_decompose_address (rtx addr, struct amo_address *out)
 {
-  rtx base = NULL_RTX, disp = NULL_RTX, index = NULL_RTX;
-  int code = -1;
+  rtx base = NULL_RTX, index = NULL_RTX, disp = NULL_RTX;
+  int type = -1;
   enum amo_addrtype retval = AMO_INVALID;
 
   switch (GET_CODE (addr))
     {
-    case CONST_INT:
-      fprintf (stderr, "\nconst_int:");
-      debug_rtx (addr);
-
     case LABEL_REF:
       retval = AMO_ABSOLUTE;
+
       disp = addr;
       /* 1 - indicates non-function symbol.  */
-      code = 1;
+      type = ADDRESS_TYPE_CODE;
       break;
 
     case SYMBOL_REF:
       /* Absolute address (known at link time).  */
       retval = AMO_ABSOLUTE;
+
       disp = addr;
       /* This is a code address if symbol_ref is a function.  */
       /* 2 indicates func sym.  */
-      code = SYMBOL_REF_FUNCTION_P (addr) ? 2 : 0;
+      type = SYMBOL_REF_FUNCTION_P (addr) ? ADDRESS_TYPE_LABEL : ADDRESS_TYPE_DATA;
       break;
 
     case REG:
-      /* Register relative address. */
-      /* Assume REG fits in a single register. */
-      retval = AMO_REG_REL;
+      retval = AMO_REG_ABSOLUTE;
+
       base = addr;
+      type = ADDRESS_TYPE_DATA;
       break;
 
     case PLUS:
       switch (GET_CODE (XEXP (addr, 0)))
       {
       case REG:
-        /* REG + DISP20.  */
-        /* All Reg relative addresses having a displacement needs 
-          to fit in 20-bits.  */
-        disp = XEXP (addr, 1);
+        /* REG + IMM16(IMM18) */
         switch (GET_CODE (XEXP (addr, 1)))
-          {
-          case CONST_INT:
-            /* Shall fit in 20-bits.  */
-            if (!UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 20))
-              return AMO_INVALID;
-            code = 0;
-            break;
-
-          case UNSPEC:
-            switch (XINT (XEXP (addr, 1), 1))
-            {
-              case UNSPEC_LIBRARY_OFFSET:
-              default:
-                gcc_unreachable ();
-            }
-            break;
-
-          case LABEL_REF:
-          case SYMBOL_REF:
-          case CONST:
-            /* This is also a valid expression for address.
-              However, we cannot ascertain if the resultant
-              displacement will be valid 20-bit value.  Therefore, 
-              lets not allow such an expression for now.  This will 
-              be updated when  we find a way to validate this 
-              expression as legitimate address. 
-              Till then fall through AMO_INVALID.  */
-          default:
+        {
+        case CONST_INT:
+          if (!SIGNED_INT_FITS_N_BITS (INTVAL (disp), 18))
             return AMO_INVALID;
-          }
+          break;
 
-        /* Now check if REG can fit into single or pair regs.  */
-        retval = AMO_REG_REL;
+        case UNSPEC:
+          switch (XINT (XEXP (addr, 1), 1))
+          {
+            case UNSPEC_LIBRARY_OFFSET:
+            default:
+              gcc_unreachable ();
+          }
+          break;
+
+        default:
+          return AMO_INVALID;
+        }
+
+        retval = AMO_REG_INDEX;
+
         base = XEXP (addr, 0);
+        index = XEXP (addr, 1);
+        type = ADDRESS_TYPE_DATA;
         break;
 
       default:
@@ -816,19 +768,11 @@ amo_decompose_address (rtx addr, struct amo_address *out,
       return AMO_INVALID;
     }
 
-  /* Check if the base and index registers are valid.  */
-  if (base && !(amo_addr_reg_p (base)))
-    return AMO_INVALID;
-  if (base && !(AMO_REG_OK_FOR_BASE_P (base)))
-    return AMO_INVALID;
-  if (index && !(REG_OK_FOR_INDEX_P (index)))
-    return AMO_INVALID;
-
   /* Write the decomposition to out parameter.  */
   out->base = base;
-  out->disp = disp;
   out->index = index;
-  out->code = code;
+  out->disp = disp;
+  out->type = type;
 
   return retval;
 }
@@ -931,71 +875,10 @@ amo_legitimate_address_p (machine_mode mode ATTRIBUTE_UNUSED,
   enum amo_addrtype addrtype;
   struct amo_address address;
 
-  if (TARGET_DEBUG_ADDR)
-    {
-      fprintf (stderr,
-	       "\n======\nTARGET_LEGITIMATE_ADDRESS_P, mode = %s, strict = %d",
-	       GET_MODE_NAME (mode), strict);
-      debug_rtx (addr);
-    }
-  addrtype = amo_decompose_address (addr, &address,
-				     (TARGET_DEBUG_ADDR ? 1 : 0), FALSE);
-
-  if (TARGET_DEBUG_ADDR)
-    {
-      const char *typestr;
-
-      switch (addrtype)
-	{
-	case AMO_INVALID:
-	  typestr = "invalid";
-	  break;
-	case AMO_ABSOLUTE:
-	  typestr = "absolute";
-	  break;
-	case AMO_REG_REL:
-	  typestr = "register relative";
-	  break;
-	case AMO_REGP_REL:
-	  typestr = "register pair relative";
-	  break;
-	case AMO_INDEX_REGP_REL:
-	  typestr = "index + register pair relative";
-	  break;
-	default:
-	  gcc_unreachable ();
-	}
-      fprintf (stderr, "\namo address type: %s\n", typestr);
-    }
+  addrtype = amo_decompose_address (addr, &address);
 
   if (addrtype == AMO_INVALID)
     return FALSE;
-
-  if (strict)
-    {
-      if (address.base
-	  && !REGNO_MODE_OK_FOR_BASE_P (REGNO (address.base), mode))
-	{
-	  if (TARGET_DEBUG_ADDR)
-	    fprintf (stderr, "base register not strict\n");
-	  return FALSE;
-	}
-      if (address.index && !REGNO_OK_FOR_INDEX_P (REGNO (address.index)))
-	{
-	  if (TARGET_DEBUG_ADDR)
-	    fprintf (stderr, "index register not strict\n");
-	  return FALSE;
-	}
-    }
-
-  /* Return true if addressing mode is register relative.  */
-  if (flag_pic)
-    {
-      if (addrtype == AMO_REG_REL || addrtype == AMO_REGP_REL)
-	return TRUE;
-      else
-	return FALSE;
-    }
 
   return TRUE;
 }
@@ -1012,43 +895,24 @@ amo_address_cost (rtx addr, machine_mode mode ATTRIBUTE_UNUSED,
   struct amo_address address;
   int cost = 2;
 
-  addrtype = amo_decompose_address (addr, &address, 0, FALSE);
+  addrtype = amo_decompose_address (addr, &address);
 
   gcc_assert (addrtype != AMO_INVALID);
 
-  /* AMO_ABSOLUTE            : 3
-     AMO_REG_REL  (disp !=0) : 4
-     AMO_REG_REL  (disp ==0) : 5
-     AMO_REGP_REL (disp !=0) : 6
-     AMO_REGP_REL (disp ==0) : 7
-     AMO_INDEX_REGP_REL (disp !=0) : 8
-     AMO_INDEX_REGP_REL (disp ==0) : 9.  */
   switch (addrtype)
-    {
+  {
+    case AMO_REG_ABSOLUTE:
+    case AMO_REG_INDEX:
+      break;
+
     case AMO_ABSOLUTE:
-      cost += 1;
+      if (address->type != ADDRESS_TYPE_DATA)
+        cost += 2;
       break;
-    case AMO_REGP_REL:
-      cost += 2;
-      /* Fall through.  */
-    case AMO_REG_REL:
-      cost += 3;
-      if (address.disp)
-	cost -= 1;
-      break;
-    case AMO_INDEX_REGP_REL:
-      cost += 7;
-      if (address.disp)
-	cost -= 1;
+
     default:
       break;
-    }
-
-  if (TARGET_DEBUG_ADDR)
-    {
-      fprintf (stderr, "\n======\nmacro TARGET_ADDRESS_COST = %d\n", cost);
-      debug_rtx (addr);
-    }
+  }
 
   return cost;
 }
@@ -1206,7 +1070,7 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
   struct amo_address address;
 
   /* Decompose the address. Also ask it to treat address as constant.  */
-  addrtype = amo_decompose_address (addr, &address, 0, TRUE);
+  addrtype = amo_decompose_address (addr, &address);
 
   if (address.disp && GET_CODE (address.disp) == UNSPEC)
     {
@@ -1215,44 +1079,22 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
 
   switch (addrtype)
     {
-    case AMO_REG_REL:
-      if (address.disp)
-	{
-	  if (GET_CODE (address.disp) == UNSPEC)
-	    amo_print_operand (file, address.disp, 0);
-	  else
-	    output_addr_const (file, address.disp);
-	}
-      else
-	fprintf (file, "0");
-      fprintf (file, "(%s)", reg_names[REGNO (address.base)]);
+    case AMO_REG_ABSOLUTE:
+      fprintf (file, "[%s]", reg_names[REGNO (address.base)]);
+      break;
+    
+    case AMO_REG_INDEX:
+		  fprintf (file, "[%s, $%d]", reg_names[REGNO (address.base)], INTVAL (address.index));
       break;
 
     case AMO_ABSOLUTE:
       if (address.disp)
-	output_addr_const (file, address.disp);
+        output_addr_const (file, address.disp);
       else
-	fprintf (file, "0");
+        fprintf (file, "0");
       break;
 
-    case AMO_INDEX_REGP_REL:
-      fprintf (file, "[%s]", reg_names[REGNO (address.index)]);
-      /* Fall through.  */
-    case AMO_REGP_REL:
-      if (address.disp)
-	{
-	  if (GET_CODE (address.disp) == UNSPEC)
-	    amo_print_operand (file, address.disp, 0);
-	  else
-	    output_addr_const (file, address.disp);
-	}
-      else
-	fprintf (file, "0");
-      fprintf (file, "(%s,%s)", reg_names[REGNO (address.base) + 1],
-	       reg_names[REGNO (address.base)]);
-      break;
     default:
-      printf ("----------here -----------------\n");
       debug_rtx (addr);
       gcc_unreachable ();
     }
