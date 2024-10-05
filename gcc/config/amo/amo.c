@@ -906,7 +906,7 @@ amo_address_cost (rtx addr, machine_mode mode ATTRIBUTE_UNUSED,
       break;
 
     case AMO_ABSOLUTE:
-      if (address->type != ADDRESS_TYPE_DATA)
+      if (address.type != ADDRESS_TYPE_DATA)
         cost += 2;
       break;
 
