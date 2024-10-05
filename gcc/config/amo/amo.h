@@ -37,10 +37,6 @@ do                                              \
   while (0)
 #endif
 
-#define AMO_TARGET_DATA_NEAR   amo_is_data_model (DM_NEAR)
-#define AMO_TARGET_DATA_MEDIUM amo_is_data_model (DM_DEFAULT)
-#define AMO_TARGET_DATA_FAR    amo_is_data_model (DM_FAR)
-
 /* Storage layout.  */
 #define BITS_BIG_ENDIAN     0
 

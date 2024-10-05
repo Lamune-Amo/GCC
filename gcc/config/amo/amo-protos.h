@@ -35,16 +35,6 @@ extern void amo_init_cumulative_args (CUMULATIVE_ARGS *, tree, rtx);
 #endif /* RTX_CODE.  */
 #endif /* TREE_CODE.  */
 
-/* Enumeration giving the various data models we support.  */
-enum data_model_type
-{
-  DM_DEFAULT,		/* Default data model (in AMOC/C+ - up to 16M).  */
-  DM_NEAR,		/* Near data model    (in AMOC/C+ - up to 1M).  */
-  DM_FAR,		/* Far data model     (in AMOC+   - up to 4G)
-			   (in AMOC    - up to 16M).  */
-  ILLEGAL_DM		/* Illegal data model.  */
-};
-
 #ifdef RTX_CODE
 
 /* Addressing Modes.  */
@@ -53,7 +43,6 @@ struct amo_address
   rtx base;	 	/* Base register: Any register or register pair.  */
   rtx index;		/* Index register: If one is present.  */
   rtx disp;		/* Displacement or Absolute address.  */
-  enum data_model_type data;	/* data ref type.  */
   int code;		/* Whether the address is code address. 
 			   0 - data, 1 - code label, 2 - function label.  */
 };
@@ -69,9 +58,6 @@ enum amo_addrtype
 
 extern void notice_update_cc (rtx);
 extern int amo_operand_bit_pos (int val, int bitval);
-extern void amo_decompose_const (rtx x, int *code,
-				  enum data_model_type *data,
-				  bool treat_as_const);
 extern enum amo_addrtype amo_decompose_address (rtx addr,
 						  struct amo_address *out,
 						  bool debug_print,
@@ -92,7 +78,6 @@ extern void amo_expand_epilogue (void);
 
 /* Handling the "interrupt" attribute.  */
 extern int amo_interrupt_function_p (void);
-extern bool amo_is_data_model (enum data_model_type);
 extern poly_int64 amo_push_rounding (poly_int64);
 
 #endif /* Not GCC_AMO_PROTOS_H.  */ 

@@ -121,11 +121,6 @@ static struct amo_frame_info current_frame_info;
 
 /* Static Variables.  */
 
-/* Data model that was supplied by user via command line option
-   This will be overridden in case of invalid combination
-   of core and data model options are supplied.  */
-static enum data_model_type data_model = DM_DEFAULT;
-
 /* TARGETM Function Prototypes and forward declarations  */
 static void amo_print_operand (FILE *, rtx, int);
 static void amo_print_operand_address (FILE *, machine_mode, rtx);
@@ -259,14 +254,6 @@ amo_return_pops_args (tree, tree, poly_int64)
   return 0;
 }
 
-/* Returns true if data model selected via command line option
-   is same as function argument.  */
-bool
-amo_is_data_model (enum data_model_type model)
-{
-  return (model == data_model);
-}
-
 /* Parse relevant options and override.  */
 static void
 amo_override_options (void)
@@ -285,31 +272,11 @@ amo_override_options (void)
   if (flag_exceptions)
     flag_cse_follow_jumps = 0;
 
-  /* If -fpic option, data_model == DM_FAR.  */
+  /* If -fpic option  */
   if (flag_pic == NEAR_PIC)
     {
-      data_model = DM_FAR;
+      printf ("flags: flag_pic == NEAR_PIC\n");
     }
-
-  /* The only option we want to examine is data model option.  */
-  if (amo_data_model)
-    {
-      if (strcmp (amo_data_model, "medium") == 0)
-	data_model = DM_DEFAULT;
-      else if (strcmp (amo_data_model, "near") == 0)
-	data_model = DM_NEAR;
-      else if (strcmp (amo_data_model, "far") == 0)
-	{
-	  if (TARGET_AMOCP)
-	    data_model = DM_FAR;
-	  else
-	    error ("data-model=far not valid for amoc architecture");
-	}
-      else
-	error ("invalid data model option -mdata-model=%s", amo_data_model);
-    }
-  else
-    data_model = DM_DEFAULT;
 }
 
 /* Implements the macro  TARGET_CONDITIONAL_REGISTER_USAGE.  */
@@ -720,70 +687,6 @@ amo_addr_reg_p (rtx addr_reg)
   return TRUE;
 }
 
-/* Helper functions: Created specifically for decomposing operand of CONST
-   Recursively look into expression x for code or data symbol.
-   The function expects the expression to contain combination of 
-   SYMBOL_REF, CONST_INT, (PLUS or MINUS)
-   LABEL_REF, CONST_INT, (PLUS or MINUS)
-   SYMBOL_REF
-   LABEL_REF
-   All other combinations will result in code = -1 and data = ILLEGAL_DM
-   code data
-   -1   ILLEGAL_DM   The expression did not contain SYMBOL_REF or LABEL_REF
-    0   DM_FAR       SYMBOL_REF was found and it was far data reference. 
-    0   DM_DEFAULT   SYMBOL_REF was found and it was medium data reference. 
-    1   ILLEGAL_DM   LABEL_REF was found. 
-    2   ILLEGAL_DM   SYMBOL_REF was found and it was function reference.  */
-void
-amo_decompose_const (rtx x, int *code, enum data_model_type *data,
-		      bool treat_as_const)
-{
-  *code = -1;
-  *data = ILLEGAL_DM;
-  switch (GET_CODE (x))
-    {
-    case SYMBOL_REF:
-      *code = SYMBOL_REF_FUNCTION_P (x) ? 2 : 0;
-      /* 2 indicates func sym.  */
-      if (*code == 0)
-	{
-	  if (AMO_TARGET_DATA_NEAR)
-	    *data = DM_DEFAULT;
-	  else if (AMO_TARGET_DATA_MEDIUM)
-	    *data = DM_FAR;
-	  else if (AMO_TARGET_DATA_FAR)
-	    {
-	      if (treat_as_const)
-		/* This will be used only for printing 
-		   the qualifier. This call is (may be)
-		   made by amo_print_operand_address.  */
-		*data = DM_FAR;
-	      else
-		/* This call is (may be) made by 
-		   amo_legitimate_address_p.  */
-		*data = ILLEGAL_DM;
-	    }
-	}
-      return;
-
-    case LABEL_REF:
-      /* 1 - indicates non-function symbol.  */
-      *code = 1;
-      return;
-
-    case PLUS:
-    case MINUS:
-      /* Look into the tree nodes.  */
-      if (GET_CODE (XEXP (x, 0)) == CONST_INT)
-	amo_decompose_const (XEXP (x, 1), code, data, treat_as_const);
-      else if (GET_CODE (XEXP (x, 1)) == CONST_INT)
-	amo_decompose_const (XEXP (x, 0), code, data, treat_as_const);
-      return;
-    default:
-      return;
-    }
-}
-
 /* Decompose Address
    This function decomposes the address returns the type of address
    as defined in enum amo_addrtype.  It also fills the parameter *out.
@@ -820,104 +723,27 @@ amo_decompose_const (rtx x, int *code, enum data_model_type *data,
    I            : *** Valid but port does not support this
    I  + a20     : *** Valid but port does not support this
    I  + RP + d14: AMO_INDEX_REGP_REL (base,  index, disp)  far  (4G)
-   I  + RP + d20: AMO_INDEX_REGP_REL (base,  index, disp)  far  (4G)
+   I  + RP + d20: AMO_INDEX_REGP_REL (base,  index, disp)  far  (4G) */
 
-   Decomposing Data model in case of absolute address.
-
-   Target Option             Address type Resultant Data ref type
-   ----------------------    ------------ -----------------------
-   AMO_TARGET_MODEL_NEAR    ABS20        DM_DEFAULT
-   AMO_TARGET_MODEL_NEAR    IMM20        DM_DEFAULT
-   AMO_TARGET_MODEL_NEAR    ABS24        Invalid
-   AMO_TARGET_MODEL_NEAR    IMM32        Invalid
-
-   AMO_TARGET_MODEL_MEDIUM  ABS20        DM_DEFAULT
-   AMO_TARGET_MODEL_MEDIUM  IMM20        DM_DEFAULT
-   AMO_TARGET_MODEL_MEDIUM  ABS24        DM_FAR
-   AMO_TARGET_MODEL_MEDIUM  IMM32        Invalid
-
-   AMO_TARGET_MODEL_FAR     ABS20        DM_DEFAULT
-   AMO_TARGET_MODEL_FAR     IMM20        DM_DEFAULT
-   AMO_TARGET_MODEL_FAR     ABS24        DM_FAR
-   AMO_TARGET_MODEL_FAR     IMM32        DM_FAR.  */
 enum amo_addrtype
 amo_decompose_address (rtx addr, struct amo_address *out,
 			bool debug_print, bool treat_as_const)
 {
   rtx base = NULL_RTX, disp = NULL_RTX, index = NULL_RTX;
-  enum data_model_type data = ILLEGAL_DM;
   int code = -1;
   enum amo_addrtype retval = AMO_INVALID;
 
   switch (GET_CODE (addr))
     {
     case CONST_INT:
-      /* Absolute address (known at compile time).  */
-      code = 0;
-      if (debug_print)
-	fprintf (stderr, "\ncode:%d", code);
-      disp = addr;
-
-      if (debug_print)
-	{
-	  fprintf (stderr, "\ndisp:");
-	  debug_rtx (disp);
-	}
-
-      if (UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 20))
-	{
-	  data = DM_DEFAULT;
-	  if (debug_print)
-	    fprintf (stderr, "\ndata:%d", data);
-	  retval = AMO_ABSOLUTE;
-	}
-      else if (UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 24))
-	{
-	  if (!AMO_TARGET_DATA_NEAR)
-	    {
-	      data = DM_FAR;
-	      if (debug_print)
-		fprintf (stderr, "\ndata:%d", data);
-	      retval = AMO_ABSOLUTE;
-	    }
-	  else
-	    return AMO_INVALID;	/* ABS24 is not support in NEAR model.  */
-	}
-      else
-	return AMO_INVALID;
-      break;
-
-    case CONST:
-      /* A CONST is an expression of PLUS or MINUS with 
-	 CONST_INT, SYMBOL_REF or LABEL_REF. This is the
-	 result of assembly-time arithmetic computation.  */
-      retval = AMO_ABSOLUTE;
-      disp = addr;
-      /* Call the helper function to check the validity.  */
-      amo_decompose_const (XEXP (addr, 0), &code, &data, treat_as_const);
-      if ((code == 0) && (data == ILLEGAL_DM))
-	/* CONST is not valid code or data address.  */
-	return AMO_INVALID;
-      if (debug_print)
-	{
-	  fprintf (stderr, "\ndisp:");
-	  debug_rtx (disp);
-	  fprintf (stderr, "\ncode:%d", code);
-	  fprintf (stderr, "\ndata:%d", data);
-	}
-      break;
+      fprintf (stderr, "\nconst_int:");
+      debug_rtx (addr);
 
     case LABEL_REF:
       retval = AMO_ABSOLUTE;
       disp = addr;
       /* 1 - indicates non-function symbol.  */
       code = 1;
-      if (debug_print)
-	{
-	  fprintf (stderr, "\ndisp:");
-	  debug_rtx (disp);
-	  fprintf (stderr, "\ncode:%d", code);
-	}
       break;
 
     case SYMBOL_REF:
@@ -927,122 +753,63 @@ amo_decompose_address (rtx addr, struct amo_address *out,
       /* This is a code address if symbol_ref is a function.  */
       /* 2 indicates func sym.  */
       code = SYMBOL_REF_FUNCTION_P (addr) ? 2 : 0;
-      if (debug_print)
-	{
-	  fprintf (stderr, "\ndisp:");
-	  debug_rtx (disp);
-	  fprintf (stderr, "\ncode:%d", code);
-	}
-      /* If not function ref then check if valid data ref.  */
-      if (code == 0)
-	{
-	  if (AMO_TARGET_DATA_NEAR)
-	    data = DM_DEFAULT;
-	  else if (AMO_TARGET_DATA_MEDIUM)
-	    data = DM_FAR;
-	  else if (AMO_TARGET_DATA_FAR)
-	    {
-	      if (treat_as_const)
-		/* This will be used only for printing the 
-		   qualifier. This call is (may be) made
-		   by amo_print_operand_address.  */
-		data = DM_FAR;
-	      else
-		/* This call is (may be) made by 
-		   amo_legitimate_address_p.  */
-		return AMO_INVALID;
-	    }
-	  else
-	    data = DM_DEFAULT;
-	}
-      if (debug_print)
-	fprintf (stderr, "\ndata:%d", data);
       break;
 
     case REG:
-    case SUBREG:
-      /* Register relative address.  */
-      /* Assume REG fits in a single register.  */
+      /* Register relative address. */
+      /* Assume REG fits in a single register. */
       retval = AMO_REG_REL;
-      if (GET_MODE_BITSIZE (GET_MODE (addr)) > BITS_PER_WORD)
-	if (!LONG_REG_P (REGNO (addr)))
-	  /* REG will result in reg pair.  */
-	  retval = AMO_REGP_REL;
       base = addr;
-      if (debug_print)
-	{
-	  fprintf (stderr, "\nbase:");
-	  debug_rtx (base);
-	}
       break;
 
     case PLUS:
       switch (GET_CODE (XEXP (addr, 0)))
-	{
-	case REG:
-	case SUBREG:
-	  /* REG + DISP20.  */
-	  /* All Reg relative addresses having a displacement needs 
-	     to fit in 20-bits.  */
-	  disp = XEXP (addr, 1);
-	  if (debug_print)
-	    {
-	      fprintf (stderr, "\ndisp:");
-	      debug_rtx (disp);
-	    }
-	  switch (GET_CODE (XEXP (addr, 1)))
-	    {
-	    case CONST_INT:
-	      /* Shall fit in 20-bits.  */
-	      if (!UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 20))
-		return AMO_INVALID;
-	      code = 0;
-	      if (debug_print)
-		fprintf (stderr, "\ncode:%d", code);
-	      break;
+      {
+      case REG:
+        /* REG + DISP20.  */
+        /* All Reg relative addresses having a displacement needs 
+          to fit in 20-bits.  */
+        disp = XEXP (addr, 1);
+        switch (GET_CODE (XEXP (addr, 1)))
+          {
+          case CONST_INT:
+            /* Shall fit in 20-bits.  */
+            if (!UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 20))
+              return AMO_INVALID;
+            code = 0;
+            break;
 
-	    case UNSPEC:
-	      switch (XINT (XEXP (addr, 1), 1))
-		{
-		case UNSPEC_LIBRARY_OFFSET:
-		default:
-		  gcc_unreachable ();
-		}
-	      break;
+          case UNSPEC:
+            switch (XINT (XEXP (addr, 1), 1))
+            {
+              case UNSPEC_LIBRARY_OFFSET:
+              default:
+                gcc_unreachable ();
+            }
+            break;
 
-	    case LABEL_REF:
-	    case SYMBOL_REF:
-	    case CONST:
-	      /* This is also a valid expression for address.
-	         However, we cannot ascertain if the resultant
-	         displacement will be valid 20-bit value.  Therefore, 
-	         lets not allow such an expression for now.  This will 
-	         be updated when  we find a way to validate this 
-	         expression as legitimate address. 
-	         Till then fall through AMO_INVALID.  */
-	    default:
-	      return AMO_INVALID;
-	    }
+          case LABEL_REF:
+          case SYMBOL_REF:
+          case CONST:
+            /* This is also a valid expression for address.
+              However, we cannot ascertain if the resultant
+              displacement will be valid 20-bit value.  Therefore, 
+              lets not allow such an expression for now.  This will 
+              be updated when  we find a way to validate this 
+              expression as legitimate address. 
+              Till then fall through AMO_INVALID.  */
+          default:
+            return AMO_INVALID;
+          }
 
-	  /* Now check if REG can fit into single or pair regs.  */
-	  retval = AMO_REG_REL;
-	  base = XEXP (addr, 0);
-	  if (debug_print)
-	    {
-	      fprintf (stderr, "\nbase:");
-	      debug_rtx (base);
-	    }
-	  if (GET_MODE_BITSIZE (GET_MODE ((XEXP (addr, 0)))) > BITS_PER_WORD)
-	    {
-	      if (!LONG_REG_P (REGNO ((XEXP (addr, 0)))))
-		/* REG will result in reg pair.  */
-		retval = AMO_REGP_REL;
-	    }
-	  break;
+        /* Now check if REG can fit into single or pair regs.  */
+        retval = AMO_REG_REL;
+        base = XEXP (addr, 0);
+        break;
 
-	default:
-	  return AMO_INVALID;
-	}
+      default:
+        return AMO_INVALID;
+      }
       break;
 
     default:
@@ -1061,7 +828,6 @@ amo_decompose_address (rtx addr, struct amo_address *out,
   out->base = base;
   out->disp = disp;
   out->index = index;
-  out->data = data;
   out->code = code;
 
   return retval;

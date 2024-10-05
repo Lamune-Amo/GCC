@@ -33,10 +33,6 @@ Support multiply accumulate instructions.
 mdebug-addr
 Target RejectNegative Var(TARGET_DEBUG_ADDR) Undocumented
 
-mdata-model=
-Target RejectNegative JoinedOrMissing Var(amo_data_model)
-Treat data references as near, far or medium. medium is default.
-
 mamoc
 Target RejectNegative Mask(AMOC)
 Generate code for AMOC architecture.
