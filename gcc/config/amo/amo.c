@@ -1640,7 +1640,7 @@ amo_expand_compare_branch (rtx *operands)
 		opn1 = force_reg (mode, opn1);
   }
 
-	if (GET_CODE (opn2) != REG && GET_CODE (opn2) != CONST_INT)
+	if (!register_operand (opn2, mode))
   {
 		opn2 = force_reg (mode, opn2);
   }
