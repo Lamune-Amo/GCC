@@ -1806,11 +1806,13 @@ amo_expand_epilogue (void)
   if (frame_pointer_needed)
     {
       /* Restore the stack pointer with the frame pointers value.  */
+      printf ("1. mov\n");
       insn = emit_move_insn (stack_pointer_rtx, frame_pointer_rtx);
     }
 
   if (current_frame_info.total_size > 0)
     {
+      printf ("2. add\n");
       insn = emit_insn (gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx,
 				    GEN_INT (current_frame_info.total_size)));
       RTX_FRAME_RELATED_P (insn) = 1;
@@ -1818,6 +1820,7 @@ amo_expand_epilogue (void)
 
   if (crtl->calls_eh_return)
     {
+      printf ("3. calls_eh_return\n");
       /* Add this here so that (r5, r4) is actually loaded with the adjustment
          value; otherwise, the load might be optimized away...
          NOTE: remember to subtract the adjustment before popping the regs
@@ -1828,27 +1831,34 @@ amo_expand_epilogue (void)
 
   if (amo_interrupt_function_p ())
     {
+      printf ("4. interrupt\n");
       insn = emit_jump_insn (gen_interrupt_return ());
       RTX_FRAME_RELATED_P (insn) = 1;
     }
   else if (crtl->calls_eh_return)
     {
+      printf ("5. calls_eh_return\n");
       /* Special case, pop what's necessary, adjust SP and jump to (RA).  */
       insn = emit_jump_insn (gen_pop_and_popret_return 
 			     (GEN_INT (current_frame_info.reg_size)));
       RTX_FRAME_RELATED_P (insn) = 1;
     }
   else if (current_frame_info.last_reg_to_save == -1)
-    /* Nothing to pop.  */
-    /* Don't output jump for interrupt routine, only retx.  */
-    emit_jump_insn (gen_jump_return ());
+    {
+      printf ("6. reg_to_save == -1\n");
+      /* Nothing to pop.  */
+      /* Don't output jump for interrupt routine, only retx.  */
+      emit_jump_insn (gen_jump_return ());
+    }
   else if (only_popret_RA)
     {
+      printf ("7. only_popret_RA\n");
       insn = emit_jump_insn (gen_popret_RA_return ());
       RTX_FRAME_RELATED_P (insn) = 1;
     }
   else
     {
+      printf ("8. else\n");
       insn = emit_jump_insn (gen_pop_and_popret_return 
 			     (GEN_INT (current_frame_info.reg_size)));
       RTX_FRAME_RELATED_P (insn) = 1;

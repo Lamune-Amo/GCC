@@ -137,7 +137,7 @@
   [(use (reg:SI RA_REGNUM))
    (return)]
   "reload_completed"
-  "popret\tra"
+  "ldr\t\tlr, [sp]\nadd\t\tsp, sp, $4\njmp\t\tlr"
   [(set_attr "length" "2")]
 )
 
@@ -337,7 +337,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "beq %0, %1, %2"
+  "beq\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_ne"
@@ -348,7 +348,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bne %0, %1, %2"
+  "bne\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_gt"
@@ -359,7 +359,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "blt %1, %0, %2"
+  "blt\t\t%1, %0, %2"
 )
 
 (define_insn "cond_branch_ge"
@@ -370,7 +370,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "ble %1, %0, %2"
+  "ble\t\t%1, %0, %2"
 )
 
 (define_insn "cond_branch_lt"
@@ -381,7 +381,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "blt %0, %1, %2"
+  "blt\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_le"
@@ -392,7 +392,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "ble %0, %1, %2"
+  "ble\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_gtu"
@@ -403,7 +403,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bltu %1, %0, %2"
+  "bltu\t\t%1, %0, %2"
 )
 
 (define_insn "cond_branch_geu"
@@ -414,7 +414,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bleu %1, %0, %2"
+  "bleu\t\t%1, %0, %2"
 )
 
 (define_insn "cond_branch_ltu"
@@ -425,7 +425,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bltu %0, %1, %2"
+  "bltu\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_leu"
@@ -436,7 +436,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bleu %0, %1, %2"
+  "bleu\t\t%0, %1, %2"
 )
 
 ;;  Jumps and Branches
