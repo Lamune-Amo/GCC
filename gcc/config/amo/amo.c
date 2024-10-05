@@ -1040,80 +1040,6 @@ amo_decompose_address (rtx addr, struct amo_address *out,
 	    }
 	  break;
 
-	case PLUS:
-	  /* Valid expr: 
-	     plus
-	      /\
-	     /  \
-	     plus idx
-	      /\
-	     /  \
-	     reg  const_int
-
-	     Check if the operand 1 is valid index register.  */
-	  data = ILLEGAL_DM;
-	  if (debug_print)
-	    fprintf (stderr, "\ndata:%d", data);
-	  switch (GET_CODE (XEXP (addr, 1)))
-	    {
-	    case REG:
-	    case SUBREG:
-	      if (!REG_OK_FOR_INDEX_P (XEXP (addr, 1)))
-		return AMO_INVALID;
-	      /* OK. REG is a valid index register.  */
-	      index = XEXP (addr, 1);
-	      if (debug_print)
-		{
-		  fprintf (stderr, "\nindex:");
-		  debug_rtx (index);
-		}
-	      break;
-	    default:
-	      return AMO_INVALID;
-	    }
-	  /* Check if operand 0 of operand 0 is REGP.  */
-	  switch (GET_CODE (XEXP (XEXP (addr, 0), 0)))
-	    {
-	    case REG:
-	    case SUBREG:
-	      /* Now check if REG is a REGP and not in LONG regs.  */
-	      if (GET_MODE_BITSIZE (GET_MODE (XEXP (XEXP (addr, 0), 0)))
-		  > BITS_PER_WORD)
-		{
-      /*
-		  if (REGNO (XEXP (XEXP (addr, 0), 0))
-		      >= AMO_FIRST_DWORD_REGISTER)
-		    return AMO_INVALID;
-       */
-		  base = XEXP (XEXP (addr, 0), 0);
-		  if (debug_print)
-		    {
-		      fprintf (stderr, "\nbase:");
-		      debug_rtx (base);
-		    }
-		}
-	      else
-		return AMO_INVALID;
-	      break;
-	    default:
-	      return AMO_INVALID;
-	    }
-	  /* Now check if the operand 1 of operand 0 is const_int.  */
-	  if (GET_CODE (XEXP (XEXP (addr, 0), 1)) == CONST_INT)
-	    {
-	      disp = XEXP (XEXP (addr, 0), 1);
-	      if (debug_print)
-		{
-		  fprintf (stderr, "\ndisp:");
-		  debug_rtx (disp);
-		}
-	      if (!UNSIGNED_INT_FITS_N_BITS (INTVAL (disp), 20))
-		return AMO_INVALID;
-	    }
-	  else
-	    return AMO_INVALID;
-	  retval = AMO_INDEX_REGP_REL;
-	  break;
 	default:
 	  return AMO_INVALID;
 	}
@@ -1564,58 +1490,6 @@ amo_print_operand_address (FILE * file, machine_mode /*mode*/, rtx addr)
       debug_rtx (addr);
       gcc_unreachable ();
     }
-  /* Add qualifiers to the address expression that was just printed.  */
-  if (flag_pic < NEAR_PIC && address.code == 0)
-    {
-      if (address.data == DM_FAR)
-	/* Addr contains SYMBOL_REF & far data ptr.  */
-	fprintf (file, "@l");
-      else if (address.data == DM_DEFAULT)
-	/* Addr contains SYMBOL_REF & medium data ptr.  */
-	fprintf (file, "@m");
-      /* Addr contains SYMBOL_REF & medium data ptr.  */
-      else if (address.data == DM_NEAR)
-	/* Addr contains SYMBOL_REF & near data ptr.  */
-	fprintf (file, "@s");
-    }
-  else if (flag_pic == NEAR_PIC
-	   && (address.code == 0) && (address.data == DM_FAR
-				      || address.data == DM_DEFAULT
-				      || address.data == DM_NEAR))
-    {
-      fprintf (file, "@l");
-    }
-  else if (flag_pic == NEAR_PIC && address.code == 2)
-    {
-      fprintf (file, "pic");
-    }
-  else if (flag_pic == NEAR_PIC && address.code == 1)
-    {
-      fprintf (file, "@cpic");
-    }
-
-  else if (flag_pic == FAR_PIC && address.code == 2)
-    {
-      /* REVISIT: amo register indirect jump expects a 1-bit right shifted
-         address ! GOTc tells assembler this symbol is a text-address 
-         This needs to be fixed in such a way that this offset is done 
-         only in the case where an address is being used for indirect jump
-         or call. Determining the potential usage of loadd is of course not
-         possible always. Eventually, this has to be fixed in the 
-         processor.  */
-      fprintf (file, "GOT (%s)", reg_names[PIC_OFFSET_TABLE_REGNUM]);
-    }
-  else if (flag_pic == FAR_PIC && address.code == 1)
-    {
-      fprintf (file, "@cGOT (%s)", reg_names[PIC_OFFSET_TABLE_REGNUM]);
-    }
-
-  else if (flag_pic == FAR_PIC &&
-	   (address.data == DM_FAR || address.data == DM_DEFAULT
-	    || address.data == DM_NEAR))
-    {
-      fprintf (file, "@GOT (%s)", reg_names[PIC_OFFSET_TABLE_REGNUM]);
-    }
 }
 
 /* compare-and-branch */
@@ -1806,13 +1680,11 @@ amo_expand_epilogue (void)
   if (frame_pointer_needed)
     {
       /* Restore the stack pointer with the frame pointers value.  */
-      printf ("1. mov\n");
       insn = emit_move_insn (stack_pointer_rtx, frame_pointer_rtx);
     }
 
   if (current_frame_info.total_size > 0)
     {
-      printf ("2. add\n");
       insn = emit_insn (gen_addsi3 (stack_pointer_rtx, stack_pointer_rtx,
 				    GEN_INT (current_frame_info.total_size)));
       RTX_FRAME_RELATED_P (insn) = 1;
@@ -1831,7 +1703,6 @@ amo_expand_epilogue (void)
 
   if (amo_interrupt_function_p ())
     {
-      printf ("4. interrupt\n");
       insn = emit_jump_insn (gen_interrupt_return ());
       RTX_FRAME_RELATED_P (insn) = 1;
     }
@@ -1858,7 +1729,6 @@ amo_expand_epilogue (void)
     }
   else
     {
-      printf ("8. else\n");
       insn = emit_jump_insn (gen_pop_and_popret_return 
 			     (GEN_INT (current_frame_info.reg_size)));
       RTX_FRAME_RELATED_P (insn) = 1;
