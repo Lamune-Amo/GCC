@@ -702,6 +702,7 @@ amo_decompose_address (rtx addr, struct amo_address *out)
 
   switch (GET_CODE (addr))
     {
+    case CODE_LABEL:
     case LABEL_REF:
       retval = AMO_ABSOLUTE;
 
