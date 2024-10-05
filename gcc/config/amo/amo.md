@@ -337,7 +337,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "beq\t\t%0, %1, %g2"
+  "beq\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_ne"
@@ -348,7 +348,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bne\t\t%0, %1, %g2"
+  "bne\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_gt"
@@ -359,7 +359,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "blt\t\t%1, %0, %g2"
+  "blt\t\t%1, %0, %2"
 )
 
 (define_insn "cond_branch_ge"
@@ -370,7 +370,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "ble\t\t%1, %0, %g2"
+  "ble\t\t%1, %0, %2"
 )
 
 (define_insn "cond_branch_lt"
@@ -381,7 +381,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "blt\t\t%0, %1, %g2"
+  "blt\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_le"
@@ -392,7 +392,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "ble\t\t%0, %1, %g2"
+  "ble\t\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_gtu"
@@ -403,7 +403,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bltu\t\t%1, %0, %g2"
+  "bltu\t%1, %0, %2"
 )
 
 (define_insn "cond_branch_geu"
@@ -414,7 +414,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bleu\t\t%1, %0, %g2"
+  "bleu\t%1, %0, %2"
 )
 
 (define_insn "cond_branch_ltu"
@@ -425,7 +425,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bltu\t\t%0, %1, %g2"
+  "bltu\t%0, %1, %2"
 )
 
 (define_insn "cond_branch_leu"
@@ -436,7 +436,7 @@
         (label_ref (match_operand 2))
         (pc)))]
   ""
-  "bleu\t\t%0, %1, %g2"
+  "bleu\t%0, %1, %2"
 )
 
 ;;  Jumps and Branches
