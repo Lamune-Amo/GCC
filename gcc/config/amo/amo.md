@@ -463,7 +463,7 @@
   ""
   "@
   jmp\t\t%0
-  jmp\t\t%a0"
+  jmp\t\t%0"
   [(set_attr "length" "2,6")]
 )
 
@@ -481,7 +481,7 @@
   [(set (pc)
 	(match_operand 0 "jump_imm_operand" "i"))]
   ""
-  "jmp_imm\t%c0"
+  "jmp_imm\t\t%c0"
   [(set_attr "length" "6")]
 )
 
@@ -531,20 +531,6 @@
   ""
 )
 
-(define_insn "amo_call_insn_branch_pic"
-  [(call (mem:SI (match_operand:SI 0 "call_imm_operand" "i"))
-	 (match_operand 1 "" ""))
-   (clobber (match_operand:SI 2 "register_operand" "+r"))]
-  "flag_pic == FAR_PIC"
-  {
-    if (GET_CODE (operands[0]) != CONST_INT)
-      return "loadd\t%g0, %2 \n\tjal %2";
-    else
-      return "jal %2";
-  }
-  [(set_attr "length" "8")]
-)
-
 (define_insn "amo_call_insn_branch"
   [(call (mem:SI (match_operand:SI 0 "call_imm_operand" "i"))
 	 (match_operand 1 "" ""))
@@ -558,10 +544,10 @@
        assumes all const_int are data addresses.
     */
     if (GET_CODE (operands[0]) != CONST_INT)
-      return "bal (ra), %a0";
-    else
-      operands[4] = GEN_INT ((INTVAL (operands[0]))>>1);
-      return "movd\t%g4,\t(r1,r0)\n\tjal\t(r1,r0)";	
+      return "jal\t\t%a0";
+
+    operands[4] = GEN_INT (INTVAL (operands[0]));
+    return "mov\t\tr1, %g4\n\tjal\t\tr1";
   }
   [(set_attr "length" "6")]
 )
@@ -606,21 +592,6 @@
   ""
 )
 
-(define_insn "amo_call_value_insn_branch_pic"
-  [(set (match_operand 0 "" "=g")
-	(call (mem:SI (match_operand:SI 1 "call_imm_operand" "i"))
-	      (match_operand 2 "" "")))
-   (clobber (match_operand:SI 3 "register_operand" "+r"))]
-  "flag_pic == FAR_PIC"
-  {
-    if (GET_CODE (operands[1]) != CONST_INT)
-      return "loadd\t%g1, %3 \n\tjal %3";
-    else
-      return "jal %3";
-  }
-  [(set_attr "length" "8")]
-)
-
 (define_insn "amo_call_value_insn_branch"
   [(set (match_operand 0 "" "=g")
 	(call (mem:SI (match_operand:SI 1 "call_imm_operand" "i"))
@@ -635,12 +606,10 @@
        assumes all const_int are data addresses.
     */
     if (GET_CODE (operands[1]) != CONST_INT) 
-      return "bal (ra), %a1";
-    else
-      {
-	operands[4] = GEN_INT ((INTVAL (operands[1]))>>1);
-        return "movd\t%g4,\t(r1,r0)\n\tjal\t(r1,r0)";	
-      }
+      return "jal\t\t%a1";
+
+	  operands[4] = GEN_INT (INTVAL (operands[1]));
+    return "mov\t\tr1, %g4\n\tjal\t\tr1";
   }
   [(set_attr "length" "6")]
 )
@@ -656,12 +625,11 @@
   [(set_attr "length" "2")]
 )
 
-
-;;  Nop
+;; nop
 (define_insn "nop"
   [(const_int 0)]
   ""
-  "nop\t"
+  "nop"
 )
 
 ;; PIC
