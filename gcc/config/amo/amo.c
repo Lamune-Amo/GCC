@@ -1048,10 +1048,6 @@ amo_print_operand (FILE * file, rtx x, int code)
 	  break;
 
 	default:
-	  if (!ptr_dereference)
-	    {
-	      putc ('$', file);
-	    }
 	  amo_print_operand_address (file, VOIDmode, x);
 	  return;
 	}
