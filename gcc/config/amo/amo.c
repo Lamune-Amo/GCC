@@ -1322,7 +1322,6 @@ amo_expand_epilogue (void)
     }
   else if (current_frame_info.last_reg_to_save == -1)
     {
-      printf ("6. reg_to_save == -1\n");
       /* Nothing to pop.  */
       /* Don't output jump for interrupt routine, only retx.  */
       emit_jump_insn (gen_jump_return ());

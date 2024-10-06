@@ -54,6 +54,7 @@
 (define_mode_iterator ALLMTD [QI HI SI SF DI DF])
 (define_mode_attr tIsa       [(QI "b") (HI "h") (SI "") (SF "")])
 (define_mode_attr iF         [(QI "i") (HI "i") (SI "i") (SF "F")])
+(define_mode_attr iFD        [(DI "i") (DF "F")])
 
 ;;  Code Macro Definitions
 (define_code_attr  szPat   [(sign_extend "")  (zero_extend "zero_")])
@@ -202,37 +203,6 @@
 )
 
 ;;  Move Instructions
-
-;; Move any non-immediate operand 0 to a general operand 1.
-;; This applies only before starting the reload process
-;; Operand 0 is not a register operand of type mode MODE
-;; If Operand 0 is a push operand of type mode MODE
-;; then, if Operand 1 is a non-SP register
-;; then, Operand 1 = copy_to_mode_reg (<MODE>mode, Operand 1)
-;; endif
-;; else
-;; if Operand 1 is either register or 4-bit immediate constant
-;; then, Operand 1 = copy_to_mode_reg (<MODE>mode, Operand 1)
-;; endif
-;; endif
-;;
-;; What does copy_to_mode_reg (mode, rtx val) do?
-;; Copy the value into new temp reg and return the reg where the
-;; mode of the new reg is always mode MODE when value is constant
-;;
-;; Why should copy_to_mode_reg be called?
-;; All sorts of move are nor supported by AMO. Therefore, 
-;; when unsupported move is encountered, the additional instructions 
-;; will be introduced for the purpose.
-;;
-;; A new move insn is inserted for Op 1 when one of the following
-;; conditions is met.
-;; Case 1:  Op 0 is push_operand
-;;          Op 1 is SP register
-;;
-;; Case 2:  Op 0 is not push_operand
-;;          Op 1 is neither register nor unsigned 4-bit immediate
-
 (define_expand "mov<mode>"
   [(set (match_operand:ALLMTD 0 "nonimmediate_operand" "")
 	(match_operand:ALLMTD 1 "general_operand" ""))]
@@ -260,6 +230,125 @@
     }
       }
   }
+)
+
+; (DI, DF) move
+(define_insn "*mov<mode>_double"
+  [(set (match_operand:DOUBLE 0 "nonimmediate_operand" "=r,r,r,m")
+	(match_operand:DOUBLE 1 "general_operand" "r,<iFD>,m,r"))]
+  "register_operand (operands[0], DImode) 
+   || register_operand (operands[0], DFmode)
+   || register_operand (operands[1], DImode)
+   || register_operand (operands[1], DFmode)"
+  {
+    if (which_alternative == 0)
+    {
+      rtx xoperands[2];
+      int reg0 = REGNO (operands[0]);
+      int reg1 = REGNO (operands[1]);
+
+      xoperands[0] = gen_rtx_REG (SImode, reg0 + 2);
+      xoperands[1] = gen_rtx_REG (SImode, reg1 + 2);
+      if ((reg1 + 2) != reg0)
+      {
+        output_asm_insn ("movd\t%1, %0", operands);
+        output_asm_insn ("movd\t%1, %0", xoperands);
+      }
+      else
+      {
+        output_asm_insn ("movd\t%1, %0", xoperands);
+        output_asm_insn ("movd\t%1, %0", operands);
+      }
+    }
+
+    else if (which_alternative == 1)
+    {
+      rtx lo_operands[2];
+      rtx hi_operands[2];
+
+      lo_operands[0] = gen_rtx_REG (SImode, REGNO (operands[0]));
+      hi_operands[0] = gen_rtx_REG (SImode, REGNO (operands[0]) + 2);
+      lo_operands[1] = simplify_gen_subreg (SImode, operands[1],
+		       VOIDmode == GET_MODE (operands[1])
+		       ? DImode  : GET_MODE (operands[1]), 0);
+      hi_operands[1] = simplify_gen_subreg (SImode, operands[1],
+		       VOIDmode == GET_MODE (operands[1])
+		       ? DImode  : GET_MODE (operands[1]), 4);
+      output_asm_insn ("movd\t%1, %0", lo_operands);
+      output_asm_insn ("movd\t%1, %0", hi_operands);
+    }
+
+    else if (which_alternative == 2)
+    {
+      rtx xoperands[2];
+      int reg0 = REGNO (operands[0]), reg1 = -2;
+      rtx addr;
+
+      if (MEM_P (operands[1]))
+        addr = XEXP (operands[1], 0);
+      else
+        addr = NULL_RTX;
+
+      switch (GET_CODE (addr))
+      {
+      case REG:
+      case SUBREG:
+        reg1 = REGNO (addr);
+        break;
+
+      case PLUS:
+          switch (GET_CODE (XEXP (addr, 0)))
+          {
+            case REG:
+            case SUBREG:
+              reg1 = REGNO (XEXP (addr, 0));
+              break;
+              
+            case PLUS:
+              reg1 = REGNO (XEXP (XEXP (addr, 0), 0));
+              break;
+
+            default:
+              inform (DECL_SOURCE_LOCATION (cfun->decl), "unexpected expression; addr:");
+              debug_rtx (addr);
+              inform (DECL_SOURCE_LOCATION (cfun->decl), "operands[1]:");
+              debug_rtx (operands[1]);
+              inform (DECL_SOURCE_LOCATION (cfun->decl), "generated code might now work\n");
+              break;
+          }
+          break;
+
+      default:
+        break;
+      }
+
+      xoperands[0] = gen_rtx_REG (SImode, reg0 + 2);
+      xoperands[1] = offset_address (operands[1], GEN_INT (4), 2);
+      gcc_assert ((reg0 + 1) != reg1);
+      if (reg0 != reg1  &&  (reg1 + 1) != reg0)
+      {
+        output_asm_insn ("loadd\t%1, %0", operands);
+        output_asm_insn ("loadd\t%1, %0", xoperands);
+      }
+      else
+      {
+        output_asm_insn ("loadd\t%1, %0", xoperands);
+        output_asm_insn ("loadd\t%1, %0", operands);
+      }
+    }
+
+    else
+    {
+      rtx xoperands[2];
+      xoperands[0] = offset_address (operands[0], GEN_INT (4), 2);
+      xoperands[1] = gen_rtx_REG (SImode, REGNO (operands[1]) + 2);
+      output_asm_insn ("stord\t%1, %0", operands);
+      output_asm_insn ("stord\t%1, %0", xoperands);
+    }
+
+    return "";
+  }
+  [(set_attr "length" "4,4,4,4")]
 )
 
 ; All long (SI, SF) register move, load and store operations
