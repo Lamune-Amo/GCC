@@ -51,6 +51,7 @@
 (define_mode_iterator SHORT  [QI HI])
 (define_mode_iterator LONG   [SI SF])
 (define_mode_iterator UWORD  [QI HI SI SF])
+(define_mode_iterator DOUBLE [DI DF])
 (define_mode_iterator ALLMTD [QI HI SI SF DI DF])
 (define_mode_attr tIsa       [(QI "b") (HI "h") (SI "") (SF "")])
 (define_mode_attr iF         [(QI "i") (HI "i") (SI "i") (SF "F")])
