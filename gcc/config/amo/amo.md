@@ -237,10 +237,7 @@
 (define_insn "*mov<mode>_double"
   [(set (match_operand:DOUBLE 0 "nonimmediate_operand" "=r,r,r,m")
 	(match_operand:DOUBLE 1 "general_operand" "r,<iFD>,m,r"))]
-  "register_operand (operands[0], DImode) 
-   || register_operand (operands[0], DFmode)
-   || register_operand (operands[1], DImode)
-   || register_operand (operands[1], DFmode)"
+  ""
   {
     if (which_alternative == 0)
     {
@@ -248,17 +245,17 @@
       int reg0 = REGNO (operands[0]);
       int reg1 = REGNO (operands[1]);
 
-      xoperands[0] = gen_rtx_REG (SImode, reg0 + 2);
-      xoperands[1] = gen_rtx_REG (SImode, reg1 + 2);
-      if ((reg1 + 2) != reg0)
+      xoperands[0] = gen_rtx_REG (SImode, reg0 + 1);
+      xoperands[1] = gen_rtx_REG (SImode, reg1 + 1);
+      if ((reg1 + 1) != reg0)
       {
-        output_asm_insn ("movd\t%1, %0", operands);
-        output_asm_insn ("movd\t%1, %0", xoperands);
+        output_asm_insn ("mov\t\t%0, %1", operands);
+        output_asm_insn ("mov\t\t%0, %1", xoperands);
       }
       else
       {
-        output_asm_insn ("movd\t%1, %0", xoperands);
-        output_asm_insn ("movd\t%1, %0", operands);
+        output_asm_insn ("mov\t\t%0, %1", xoperands);
+        output_asm_insn ("mov\t\t%0, %1", operands);
       }
     }
 
@@ -268,15 +265,15 @@
       rtx hi_operands[2];
 
       lo_operands[0] = gen_rtx_REG (SImode, REGNO (operands[0]));
-      hi_operands[0] = gen_rtx_REG (SImode, REGNO (operands[0]) + 2);
+      hi_operands[0] = gen_rtx_REG (SImode, REGNO (operands[0]) + 1);
       lo_operands[1] = simplify_gen_subreg (SImode, operands[1],
 		       VOIDmode == GET_MODE (operands[1])
 		       ? DImode  : GET_MODE (operands[1]), 0);
       hi_operands[1] = simplify_gen_subreg (SImode, operands[1],
 		       VOIDmode == GET_MODE (operands[1])
 		       ? DImode  : GET_MODE (operands[1]), 4);
-      output_asm_insn ("movd\t%1, %0", lo_operands);
-      output_asm_insn ("movd\t%1, %0", hi_operands);
+      output_asm_insn ("mov\t\t%0, %1", lo_operands);
+      output_asm_insn ("mov\t\t%0, %1", hi_operands);
     }
 
     else if (which_alternative == 2)
@@ -323,18 +320,18 @@
         break;
       }
 
-      xoperands[0] = gen_rtx_REG (SImode, reg0 + 2);
+      xoperands[0] = gen_rtx_REG (SImode, reg0 + 1);
       xoperands[1] = offset_address (operands[1], GEN_INT (4), 2);
       gcc_assert ((reg0 + 1) != reg1);
-      if (reg0 != reg1  &&  (reg1 + 1) != reg0)
+      if (reg0 != reg1 && (reg1 + 1) != reg0)
       {
-        output_asm_insn ("loadd\t%1, %0", operands);
-        output_asm_insn ("loadd\t%1, %0", xoperands);
+        output_asm_insn ("ldr\t\t%0, %1", operands);
+        output_asm_insn ("ldr\t\t%0, %1", xoperands);
       }
       else
       {
-        output_asm_insn ("loadd\t%1, %0", xoperands);
-        output_asm_insn ("loadd\t%1, %0", operands);
+        output_asm_insn ("ldr\t\t%0, %1", xoperands);
+        output_asm_insn ("ldr\t\t%0, %1", operands);
       }
     }
 
@@ -342,9 +339,9 @@
     {
       rtx xoperands[2];
       xoperands[0] = offset_address (operands[0], GEN_INT (4), 2);
-      xoperands[1] = gen_rtx_REG (SImode, REGNO (operands[1]) + 2);
-      output_asm_insn ("stord\t%1, %0", operands);
-      output_asm_insn ("stord\t%1, %0", xoperands);
+      xoperands[1] = gen_rtx_REG (SImode, REGNO (operands[1]) + 1);
+      output_asm_insn ("str\t\t%0, %1", operands);
+      output_asm_insn ("str\t\t%0, %1", xoperands);
     }
 
     return "";
