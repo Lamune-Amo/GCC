@@ -115,8 +115,8 @@
   [(use (reg:SI RA_REGNUM))
    (return)]
   "reload_completed"
-  "ldr\t\tlr, [sp]\nadd\t\tsp, sp, $4\njmp\t\tlr"
-  [(set_attr "length" "6")]
+  "ldr\t\tlr, [sp]\nadd\t\tsp, sp, $4\njmp\t\tlr\n.ltorg"
+  [(set_attr "length" "8")]
 )
 
 ;; Arithmetic Instruction  Patterns
@@ -518,16 +518,16 @@
 	  (reg:SI RA_REGNUM))
    (return)]
   "reload_completed"
-  "jmp\t\tlr"
-  [(set_attr "length" "2")]
+  "jmp\t\tlr\n.ltorg"
+  [(set_attr "length" "4")]
 )
 
 (define_insn "jump_return"
   [(unspec:SI [(const_int 0)] UNSPEC_RETURN_ADDR)
    (return)]
   "reload_completed"
-  "jmp\t\tlr"
-  [(set_attr "length" "2")]
+  "jmp\t\tlr\n.ltorg"
+  [(set_attr "length" "4")]
 )
 
 (define_insn "indirect_jump"
@@ -635,7 +635,6 @@
 )
 
 ;;  Call Value Instructions
-
 (define_expand "call_value"
   [(set (match_operand 0 "general_operand" "")
 	(call (match_operand:SI 1 "memory_operand" "")
@@ -686,7 +685,6 @@
   }
   [(set_attr "length" "6")]
 )
-
 
 (define_insn "amo_call_value_insn_jump"
   [(set (match_operand 0 "" "=g")
