@@ -309,7 +309,7 @@
   [(set (pc)
     (if_then_else (
         eq:UWORD (match_operand:UWORD 0 "register_operand" "r")
-                 (match_operand:UWORD "nonmemory_operand" "r"))
+                 (match_operand:UWORD 1 "nonmemory_operand" "r"))
                  (label_ref (match_operand 2))
                             (pc)))]
   ""
