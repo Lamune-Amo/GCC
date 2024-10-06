@@ -879,10 +879,10 @@ amo_legitimate_address_p (machine_mode mode ATTRIBUTE_UNUSED,
 
   addrtype = amo_decompose_address (addr, &address);
 
-  if (addrtype == AMO_INVALID)
-    return FALSE;
+  if (addrtype == AMO_REG_ABSOLUTE || addrtype == AMO_REG_INDEX)
+   return TRUE;
 
-  return TRUE;
+  return FALSE;
 }
 
 /* Routines to compute costs.  */
