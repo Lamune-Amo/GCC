@@ -48,24 +48,12 @@
 )
 
 ;;  Mode Macro Definitions
-(define_mode_iterator AMOIM [QI HI SI])
-(define_mode_iterator LONG   [SI SF])
-(define_mode_iterator ALLMTD [QI HI SI SF DI DF])
 (define_mode_iterator SHORT  [QI HI])
+(define_mode_iterator LONG   [SI SF])
+(define_mode_iterator UWORD  [QI HI SI SF])
+(define_mode_iterator ALLMTD [QI HI SI SF DI DF])
 (define_mode_attr tIsa       [(QI "b") (HI "h") (SI "") (SF "")])
-(define_mode_attr lImmArith  [(QI "4") (HI "4") (SI "6") (SF "6")])
-(define_mode_attr lImmArithD [(QI "4") (HI "4") (SI "6") (SF "6") (DI "12") (DF "12")])
 (define_mode_attr iF         [(QI "i") (HI "i") (SI "i") (SF "F")])
-(define_mode_attr iFD        [(DI "i") (DF "F")])
-(define_mode_attr LL         [(QI "L") (HI "L")])
-(define_mode_attr shImmBits  [(QI "3") (HI "4") (SI "5")])
-
-; In QI mode we push 2 bytes instead of 1 byte.
-(define_mode_attr pushCnstr [(QI "X") (HI "<") (SI "<") (SF "<") (DI "<") (DF "<")])
-
-; tpush will be used to generate the 'number of registers to push' in the 
-; push instruction.
-(define_mode_attr tpush [(QI "1") (HI "1") (SI "2") (SF "2") (DI "4") (DF "4")])
 
 ;;  Code Macro Definitions
 (define_code_attr  szPat   [(sign_extend "")  (zero_extend "zero_")])
@@ -73,22 +61,10 @@
 (define_code_attr  szIua   [(sign_extend "$1") (zero_extend "$0")])
 
 (define_code_iterator sz_xtnd    [ sign_extend       zero_extend])
-(define_code_iterator any_cond   [eq ne gt gtu lt ltu ge geu le leu])
-(define_code_iterator plusminus  [plus minus])
-
-(define_code_attr plusminus_insn [(plus "add") (minus "sub")])
-(define_code_attr plusminus_flag [(plus "PLUS") (minus "MINUS")])
-(define_code_attr comm 		 [(plus "%") (minus "")])
 
 (define_code_iterator any_logic  [and ior xor])
 (define_code_attr logic 	 [(and "and") (ior "or") (xor "xor")])
 (define_code_attr any_logic_insn [(and "and") (ior "ior") (xor "xor")])
-
-(define_mode_iterator QH 	 [QI HI])
-(define_mode_attr qh 		 [(QI "qi") (HI "hi")])
-(define_mode_attr QHsz 		 [(QI "2,2,2") (HI "2,2,4")])
-(define_mode_attr QHsuffix 	 [(QI "b") (HI "w")])
-
 
 ;;  Function Prologue and Epilogue
 (define_expand "prologue"
@@ -108,7 +84,7 @@
   {
     return amo_prepare_push_pop_string (0);
   }
-  [(set_attr "length" "4")]
+  [(set_attr "length" "8")]
 )
 
 (define_expand "epilogue"
@@ -130,7 +106,7 @@
   {
     return amo_prepare_push_pop_string (1);
   }
-  [(set_attr "length" "4")]
+  [(set_attr "length" "8")]
 )
 
 (define_insn "popret_RA_return"
@@ -138,7 +114,7 @@
    (return)]
   "reload_completed"
   "ldr\t\tlr, [sp]\nadd\t\tsp, sp, $4\njmp\t\tlr"
-  [(set_attr "length" "2")]
+  [(set_attr "length" "6")]
 )
 
 ;; Arithmetic Instruction  Patterns
@@ -195,7 +171,7 @@
 	(not:SI (match_operand:SI 1 "register_operand" "r,P")))]
   ""
   "not\t\t%0, %1"
-  [(set_attr "length" "2")]
+  [(set_attr "length" "2,2")]
 )
 
 (define_insn "ashlsi3"
@@ -204,7 +180,7 @@
 				   (match_operand:QI 2 "nonmemory_operand" "r,S")))]
 	""
 	"lsl\t\t%0, %1, %2"
-  [(set_attr "length" "2")]
+  [(set_attr "length" "2,2")]
 )
 
 (define_insn "lshrsi3"
@@ -213,7 +189,7 @@
 				   (match_operand:QI 2 "nonmemory_operand" "r,S")))]
 	""
 	"lsr\t\t%0, %1, %2"
-  [(set_attr "length" "2")]
+  [(set_attr "length" "2,2")]
 )
 
 (define_insn "ashrsi3"
@@ -222,7 +198,7 @@
 				   (match_operand:QI 2 "nonmemory_operand" "r,S")))]
 	""
 	"asr\t\t%0, %1, %2"
-  [(set_attr "length" "2")]
+  [(set_attr "length" "2,2")]
 )
 
 ;;  Move Instructions
@@ -315,11 +291,11 @@
 )
 
 ;;  Compare Instructions
-(define_expand "cbranchsi4"
+(define_expand "cbranch<mode>4"
   [(set (pc)
     (if_then_else (match_operator:VOID 0 "comparison_operator"
-            [(match_operand:SI 1 "general_operand")
-             (match_operand:SI 2 "general_operand")])
+            [(match_operand:UWORD 1 "general_operand")
+             (match_operand:UWORD 2 "general_operand")])
              (label_ref (match_operand 3 "" ""))
                         (pc)))]
   ""
@@ -329,26 +305,28 @@
   }
 )
 
-(define_insn "cond_branch_eq"
+(define_insn "cond_branch_<mode>eq"
   [(set (pc)
     (if_then_else (
-        eq:SI (match_operand:SI 0 "register_operand" "r")
-              (match_operand:SI 1 "nonmemory_operand" "r"))
-        (label_ref (match_operand 2))
-        (pc)))]
+        eq:UWORD (match_operand:UWORD 0 "register_operand" "r")
+                 (match_operand:UWORD "nonmemory_operand" "r"))
+                 (label_ref (match_operand 2))
+                            (pc)))]
   ""
   "beq\t\t%0, %1, %2"
+  [(set_attr "length" "2")]
 )
 
-(define_insn "cond_branch_ne"
+(define_insn "cond_branch_<mode>ne"
   [(set (pc)
     (if_then_else (
-        ne:SI (match_operand:SI 0 "register_operand" "r")
-              (match_operand:SI 1 "nonmemory_operand" "r"))
-        (label_ref (match_operand 2))
-        (pc)))]
+        ne:UWORD (match_operand:UWORD 0 "register_operand" "r")
+                 (match_operand:UWORD 1 "nonmemory_operand" "r"))
+                 (label_ref (match_operand 2))
+                            (pc)))]
   ""
   "bne\t\t%0, %1, %2"
+  [(set_attr "length" "2")]
 )
 
 (define_insn "cond_branch_gt"
@@ -360,6 +338,7 @@
         (pc)))]
   ""
   "blt\t\t%1, %0, %2"
+  [(set_attr "length" "2")]
 )
 
 (define_insn "cond_branch_ge"
@@ -371,6 +350,7 @@
         (pc)))]
   ""
   "ble\t\t%1, %0, %2"
+  [(set_attr "length" "2")]
 )
 
 (define_insn "cond_branch_lt"
@@ -382,6 +362,7 @@
         (pc)))]
   ""
   "blt\t\t%0, %1, %2"
+  [(set_attr "length" "2")]
 )
 
 (define_insn "cond_branch_le"
@@ -393,6 +374,7 @@
         (pc)))]
   ""
   "ble\t\t%0, %1, %2"
+  [(set_attr "length" "2")]
 )
 
 (define_insn "cond_branch_gtu"
@@ -404,6 +386,7 @@
         (pc)))]
   ""
   "bltu\t%1, %0, %2"
+  [(set_attr "length" "2")]
 )
 
 (define_insn "cond_branch_geu"
@@ -415,6 +398,7 @@
         (pc)))]
   ""
   "bleu\t%1, %0, %2"
+  [(set_attr "length" "2")]
 )
 
 (define_insn "cond_branch_ltu"
@@ -426,6 +410,7 @@
         (pc)))]
   ""
   "bltu\t%0, %1, %2"
+  [(set_attr "length" "2")]
 )
 
 (define_insn "cond_branch_leu"
@@ -437,6 +422,7 @@
         (pc)))]
   ""
   "bleu\t%0, %1, %2"
+  [(set_attr "length" "2")]
 )
 
 ;;  Jumps and Branches
@@ -464,7 +450,7 @@
   "@
   jmp\t\t%0
   jmp\t\t%0"
-  [(set_attr "length" "2,6")]
+  [(set_attr "length" "2,2")]
 )
 
 (define_insn "interrupt_return"
@@ -474,7 +460,7 @@
   {
     return amo_prepare_push_pop_string (1);
   }
-  [(set_attr "length" "14")]
+  [(set_attr "length" "8")]
 )
 
 (define_insn "jump_to_imm"
@@ -482,7 +468,7 @@
 	(match_operand 0 "jump_imm_operand" "i"))]
   ""
   "jmp_imm\t\t%c0"
-  [(set_attr "length" "6")]
+  [(set_attr "length" "2")]
 )
 
 (define_insn "jump"
@@ -490,7 +476,7 @@
 	(label_ref (match_operand 0 "" "")))]
   ""
   "jmp\t\t%l0"
-  [(set_attr "length" "6")]
+  [(set_attr "length" "2")]
 )
 
 ;;  Table Jump
