@@ -1115,14 +1115,14 @@ amo_expand_compare_branch (rtx *operands)
 
 	gcc_assert(operands[3] != NULL);
 
-	if (!register_operand (opn1, mode))
+	if (!register_operand (opn1, SImode))
   {
-		opn1 = force_reg (mode, opn1);
+		opn1 = force_reg (SImode, opn1);
   }
 
-	if (!register_operand (opn2, mode))
+	if (!register_operand (opn2, SImode))
   {
-		opn2 = force_reg (mode, opn2);
+		opn2 = force_reg (SImode, opn2);
   }
 
 	code = gen_rtx_fmt_ee (GET_CODE (operands[0]), mode, opn1, opn2);
