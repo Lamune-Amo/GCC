@@ -1125,7 +1125,7 @@ amo_expand_compare_branch (rtx *operands)
 		opn2 = force_reg (SImode, opn2);
   }
 
-	code = gen_rtx_fmt_ee (GET_CODE (operands[0]), mode, opn1, opn2);
+	code = gen_rtx_fmt_ee (GET_CODE (operands[0]), SImode, opn1, opn2);
 	label = gen_rtx_LABEL_REF (VOIDmode, operands[3]);
 
 	insn = gen_rtx_SET (pc_rtx, gen_rtx_IF_THEN_ELSE (VOIDmode, code, label, pc_rtx));
