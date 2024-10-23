@@ -1113,14 +1113,26 @@ amo_expand_compare_branch (rtx *operands)
 
 	gcc_assert(operands[3] != NULL);
 
-	if (GET_CODE (opn1) != REG)
+	if (GET_CODE (opn1) == MEM)
   {
 		opn1 = force_reg (GET_MODE (opn1), opn1);
   }
-	if (GET_CODE (opn2) != REG)
+	if (GET_CODE (opn2) == MEM)
   {
 		opn2 = force_reg (GET_MODE (opn2), opn2);
   }
+
+	if (!register_operand (opn1, SImode))
+  {
+		opn1 = force_reg (SImode, opn1);
+  }
+	if (!register_operand (opn2, SImode))
+  {
+		opn2 = force_reg (SImode, opn2);
+  }
+
+  assert (GET_MODE (opn1) == SImode);
+  assert (GET_MODE (opn2) == SImode);
 
 	code = gen_rtx_fmt_ee (GET_CODE (operands[0]), SImode, opn1, opn2);
 	label = gen_rtx_LABEL_REF (VOIDmode, operands[3]);
