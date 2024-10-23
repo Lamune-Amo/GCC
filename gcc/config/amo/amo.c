@@ -1131,8 +1131,8 @@ amo_expand_compare_branch (rtx *operands)
 		opn2 = force_reg (SImode, opn2);
   }
 
-  assert (GET_MODE (opn1) == SImode);
-  assert (GET_MODE (opn2) == SImode);
+  gcc_assert (GET_MODE (opn1) == SImode);
+  gcc_assert (GET_MODE (opn2) == SImode);
 
 	code = gen_rtx_fmt_ee (GET_CODE (operands[0]), SImode, opn1, opn2);
 	label = gen_rtx_LABEL_REF (VOIDmode, operands[3]);
