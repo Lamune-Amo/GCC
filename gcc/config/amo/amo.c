@@ -1110,7 +1110,6 @@ void
 amo_expand_compare_branch (rtx *operands)
 {
 	rtx insn, code, label;
-  rtx temp;
 
   /* operand[0]: comparison operator  */
   /* operand[1]: first operand        */
@@ -1134,17 +1133,14 @@ amo_expand_compare_branch (rtx *operands)
   {
 		opn1 = force_reg (SImode, opn1);
     if (GET_MODE (opn1) != SImode)
-      opn1 = convert_modes (SImode, GET_MODE (opn1), opn1, signed_compare_p (GET_CODE (operands[0])));
+      opn1 = convert_modes (SImode, GET_MODE (opn1), opn1, !signed_compare_p (GET_CODE (operands[0])));
   }
 	if (!register_operand (opn2, SImode))
   {
 		opn2 = force_reg (SImode, opn2);
     if (GET_MODE (opn2) != SImode)
-      opn2 = convert_modes (SImode, GET_MODE (opn2), opn2, signed_compare_p (GET_CODE (operands[0])));
+      opn2 = convert_modes (SImode, GET_MODE (opn2), opn2, !signed_compare_p (GET_CODE (operands[0])));
   }
-
-  printf ("MODE: %s %s\n\n", GET_MODE (opn1) == SImode ? "SImode" : "OTHER",
-                 GET_MODE (opn2) == SImode ? "SImode" : "OTHER");
 
 	code = gen_rtx_fmt_ee (GET_CODE (operands[0]), SImode, opn1, opn2);
 	label = gen_rtx_LABEL_REF (VOIDmode, operands[3]);
