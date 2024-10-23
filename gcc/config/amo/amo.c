@@ -1111,18 +1111,24 @@ amo_expand_compare_branch (rtx *operands)
 	rtx opn1 = operands[1];
 	rtx opn2 = operands[2];
 
-	machine_mode mode = GET_MODE (opn1);
-
 	gcc_assert(operands[3] != NULL);
 
-	if (!register_operand (opn1, mode))
+	if (GET_CODE (opn1) == MEM)
   {
-		opn1 = force_reg (mode, opn1);
+		opn1 = force_reg (GET_MODE (opn1), opn1);
+  }
+	if (GET_CODE (opn2) == MEM)
+  {
+		opn2 = force_reg (GET_MODE (opn2), opn2);
   }
 
-	if (!register_operand (opn2, mode))
+	if (!register_operand (opn1, SImode))
   {
-		opn2 = force_reg (mode, opn2);
+		opn1 = force_reg (SImode, opn1);
+  }
+	if (!register_operand (opn2, SImode))
+  {
+		opn2 = force_reg (SImode, opn2);
   }
 
 	code = gen_rtx_fmt_ee (GET_CODE (operands[0]), SImode, opn1, opn2);
