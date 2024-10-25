@@ -397,7 +397,7 @@ struct cumulative_args
 
 #define DATA_SECTION_ASM_OP "\t.data"
 
-#define BSS_SECTION_ASM_OP  "\t.bss"
+#define BSS_SECTION_ASM_OP  "\t.section\t.bss"
 
 /* Position independent code (PIC).  */
 /* NEAR_PIC for -fpic option.  */
