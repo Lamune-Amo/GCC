@@ -1245,7 +1245,14 @@ amo_prepare_push_pop_string (int push_or_pop)
 
     /* you may need fallowing conditional statement for interrupt handling */
     /* if (print_ra && !amo_interrupt_function_p () && !crtl->calls_eh_return) */
-    sprintf (insn_buf, "\tjmp\t\tlr\n.ltorg\n");
+    if (amo_interrupt_function_p ())
+    {
+      sprintf (insn_buf, "\tret\t\tlr\n.ltorg\n");
+    }
+    else
+    {
+      sprintf (insn_buf, "\tjmp\t\tlr\n.ltorg\n");
+    }
     strcat (return_str, insn_buf);
   }
   
