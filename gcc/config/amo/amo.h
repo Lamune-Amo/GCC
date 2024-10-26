@@ -134,8 +134,8 @@ do                                              \
     0, 0, 0, 0, 0, 0, 0, 0,                                                      \
   /* r16 r17 r18 r19 r20 r21 r22 r23 */                                          \
     0, 0, 0, 0, 0, 0, 0, 0,                                                      \
-  /* r24 r25 r26 r27(interrupt only) r28 fp sp lr */                                             \
-    0, 0, 0, 1, 0, 0, 1, 0                                                       \
+  /* r24 r25 r26(interrupt only), r27(interrupt only) r28 fp sp lr */            \
+    0, 0, 1, 1, 0, 0, 1, 0                                                       \
   }
 
 /* 1 for registers not available across function calls.
