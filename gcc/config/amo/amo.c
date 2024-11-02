@@ -1034,11 +1034,13 @@ amo_print_operand (FILE * file, rtx x, int code)
 	    fprintf (file, "$0x%lx", l);
 	    return;
 	  }
+
 	case CONST_INT:
 	  {
 	    fprintf (file, "$%ld", INTVAL (x));
 	    return;
 	  }
+
 	case UNSPEC:
 	  switch (XINT (x, 1))
 	    {

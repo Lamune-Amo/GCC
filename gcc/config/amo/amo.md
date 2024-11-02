@@ -630,7 +630,7 @@
 	 (match_operand 1 "" ""))
    (clobber (match_operand:SI 2 "register_operand" "+r"))]
   ""
-  "jal\t%0"
+  "jal\t\t%0"
   [(set_attr "length" "2")]
 )
 
@@ -692,7 +692,7 @@
 	      (match_operand 2 "" "")))
    (clobber (match_operand:SI 3 "register_operand" "+r"))]
   ""
-  "jal\t%1"
+  "jal\t\t%1"
   [(set_attr "length" "2")]
 )
 
